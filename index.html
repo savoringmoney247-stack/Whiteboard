@@ -301,20 +301,25 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   will-change: transform, left, top;
 }
 
-.selection-bbox {
+.selection-layer { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+.sel-box {
   position: absolute;
   border: 1.5px solid var(--azure);
   background: rgba(110,170,219,0.08);
-  pointer-events: none; z-index: 6;
   border-radius: 2px;
   box-shadow: 0 0 0 2px rgba(110,170,219,0.18);
 }
-.selection-bbox::after {
-  content: 'Selected · drag to move · ⌫ delete';
-  position: absolute; top: -22px; left: 0;
+.sel-label {
+  position: absolute;
   font-size: 10px; font-family: var(--mono);
   color: var(--azure); background: var(--bg-void);
   padding: 2px 6px; border-radius: 3px; white-space: nowrap;
+}
+.marquee-box {
+  position: absolute; display: none;
+  border: 1.5px dashed var(--azure);
+  background: rgba(110,170,219,0.1);
+  pointer-events: none; z-index: 6;
 }
 
 .canvas-watermark {
@@ -386,6 +391,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .dock-custom:hover { transform: scale(1.15); }
 .dock-custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .dock-size { display: flex; align-items: center; gap: 8px; padding: 0 6px; min-width: 110px; }
+.dock-size-pct { font-family: var(--mono); font-size: 9.5px; color: var(--ink-dim); min-width: 28px; text-align: right; flex-shrink: 0; }
 .dock-size-dot {
   width: 24px; height: 24px;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
@@ -512,19 +518,32 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .thumb:hover .thumb-del { opacity: 1; }
 .thumb-del:hover { background: var(--crimson); color: white; }
 .add-page {
-  flex-shrink: 0; width: 64px; height: 36px;
-  border-radius: 3px;
-  border: 1.5px dashed rgba(255,255,255,0.18);
-  background: transparent; color: var(--ink-mid);
-  display: flex; align-items: center; justify-content: center;
-  gap: 4px; font-size: 10px; letter-spacing: 0.05em;
-  transition: all var(--t);
+  flex-shrink: 0; width: 70px; height: 40px;
+  border-radius: 11px; border: none; cursor: pointer;
+  background: linear-gradient(135deg, #ff6b9d 0%, #c268f0 45%, #6a8dff 100%);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  gap: 4px; font-size: 10px; font-weight: 800; letter-spacing: 0.06em;
+  box-shadow:
+    0 3px 0 rgba(30,10,40,0.45),
+    0 7px 18px rgba(150,90,255,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.35);
+  transform: perspective(400px) rotateX(0deg) translateY(0) scale(1);
+  transition: transform 240ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 240ms ease, filter 240ms ease;
 }
 .add-page:hover {
-  border-color: var(--gold); color: var(--gold-bright);
-  background: var(--gold-soft);
+  transform: perspective(400px) rotateX(10deg) translateY(-3px) scale(1.05);
+  box-shadow:
+    0 6px 0 rgba(30,10,40,0.45),
+    0 16px 30px rgba(150,90,255,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.5);
+  filter: brightness(1.1) saturate(1.2);
 }
-.add-page svg { width: 11px; height: 11px; }
+.add-page:active {
+  transform: perspective(400px) rotateX(3deg) translateY(1px) scale(0.97);
+  box-shadow: 0 1px 0 rgba(30,10,40,0.45), 0 4px 10px rgba(150,90,255,0.4);
+}
+.add-page svg { width: 13px; height: 13px; transition: transform 280ms cubic-bezier(0.34,1.56,0.64,1); }
+.add-page:hover svg { transform: rotate(180deg) scale(1.2); }
 
 /* Modal */
 .modal-bg {
@@ -800,7 +819,8 @@ body { transition: background-color 900ms ease; }
         <div class="sticky-layer" id="sticky-layer"></div>
         <div class="eraser-ring" id="eraser-ring"></div>
         <div class="laser-cursor" id="laser-cursor"></div>
-        <div class="selection-bbox" id="selection-bbox" style="display:none"></div>
+        <div class="selection-layer" id="selection-layer"></div>
+        <div class="marquee-box" id="marquee-box"></div>
         <div class="canvas-watermark">Kingshuk's Whiteboard</div>
       </div>
     </div>
@@ -814,6 +834,7 @@ body { transition: background-color 900ms ease; }
       <div class="dock-size">
         <div class="dock-size-dot"><div id="size-preview-dot"></div></div>
         <input type="range" min="1" max="40" value="4" class="dock-size-slider" id="size-slider">
+        <span class="dock-size-pct" id="size-pct">10%</span>
       </div>
       <div class="dock-sep"></div>
       <button class="dock-btn" id="btn-format" style="position:relative;">
@@ -941,6 +962,7 @@ const SHORTCUTS = [
   ['New page','⌘ / Ctrl + N'],['Export PDF','⌘ / Ctrl + P'],
   ['Focus mode','F'],['Help','?'],
   ['Paste image','⌘ / Ctrl + V'],['Delete selected','⌫'],
+  ['Select all','⌘ / Ctrl + A'],['Drag-select multiple','V + drag'],
 ];
 
 const state = {
@@ -955,8 +977,9 @@ const state = {
   lastShapePt: null,
   mainRedrawScheduled: false,
   laserTrail: [],
-  selected: null,
+  selectedItems: [],
   dragOffset: null,
+  marqueeStart: null,
   shiftHeld: false,
   altHeld: false,
 };
@@ -993,7 +1016,8 @@ const canvasWrap    = document.getElementById('canvas-wrap');
 const stickyLayer   = document.getElementById('sticky-layer');
 const eraserRing    = document.getElementById('eraser-ring');
 const laserCursor   = document.getElementById('laser-cursor');
-const selectionBBox = document.getElementById('selection-bbox');
+const selectionLayer = document.getElementById('selection-layer');
+const marqueeBox = document.getElementById('marquee-box');
 
 [bgCanvas, mainCanvas, activeCanvas, laserCanvas].forEach(c => { c.width = W; c.height = H; });
 const bgCtx     = bgCanvas.getContext('2d');
@@ -1038,7 +1062,7 @@ document.getElementById('custom-color').addEventListener('input', e => {
 });
 
 function selectTool(id) {
-  if (state.selected) clearSelection();
+  if (state.selectedItems.length) clearSelection();
   state.tool = id;
   document.querySelectorAll('.dock-btn[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === id));
   canvasWrap.className = 'canvas-wrap';
@@ -1067,12 +1091,15 @@ function selectTool(id) {
 
 const sizeSlider = document.getElementById('size-slider');
 const sizePreviewDot = document.getElementById('size-preview-dot');
+const sizePct = document.getElementById('size-pct');
 sizeSlider.addEventListener('input', e => { state.size = +e.target.value; updateSizeDot(); });
 function updateSizeDot() {
   const px = Math.max(3, Math.min(20, state.size * 0.85));
   sizePreviewDot.style.width = px + 'px';
   sizePreviewDot.style.height = px + 'px';
   sizePreviewDot.style.background = state.color;
+  const max = +sizeSlider.max || 40;
+  sizePct.textContent = Math.round((state.size / max) * 100) + '%';
 }
 updateSizeDot();
 
@@ -1152,7 +1179,7 @@ function resizeCanvasFormat(newW, newH) {
   W = newW; H = newH;
   [bgCanvas, mainCanvas, activeCanvas, laserCanvas].forEach(c => { c.width = W; c.height = H; });
   document.querySelector('.canvas-frame').style.aspectRatio = `${W} / ${H}`;
-  if (state.selected) clearSelection();
+  if (state.selectedItems.length) clearSelection();
   fitFrame();
   renderBackground(); renderMain(); renderStickies(); renderThumbs();
   scheduleSave();
@@ -1440,12 +1467,17 @@ function onDown(e) {
   else if (tool === 'select') {
     const hit = hitTest(pt);
     if (hit) {
-      selectItem(hit);
-      state.dragOffset = { dx: pt.x - hit.bbox.x, dy: pt.y - hit.bbox.y };
+      const already = state.selectedItems.some(it => it.kind === hit.kind && it.index === hit.index);
+      if (!already) state.selectedItems = [hit];
+      state.dragOffset = { x: pt.x, y: pt.y };
       canvasWrap.classList.add('grabbing');
       state.drawing = true;
+      renderSelection();
     } else {
-      clearSelection();
+      state.selectedItems = [];
+      state.marqueeStart = pt;
+      state.drawing = true;
+      renderSelection();
     }
   }
 }
@@ -1498,15 +1530,26 @@ function onMove(e) {
     state.lastShapePt = pt;
     scheduleActiveDraw();
   }
-  else if (tool === 'select' && state.selected && state.dragOffset) {
-    const dx = pt.x - state.dragOffset.dx - state.selected.bbox.x;
-    const dy = pt.y - state.dragOffset.dy - state.selected.bbox.y;
-    moveSelected(dx, dy);
-    state.selected.bbox.x += dx; state.selected.bbox.y += dy;
-    updateSelectionBBox();
+  else if (tool === 'select' && state.marqueeStart) {
+    const a = state.marqueeStart, b = pt;
+    const mx = Math.min(a.x, b.x), my = Math.min(a.y, b.y);
+    const mw = Math.abs(b.x - a.x), mh = Math.abs(b.y - a.y);
+    const cssA = canvasToCss({ x: mx, y: my });
+    const cssB = canvasToCss({ x: mx + mw, y: my + mh });
+    marqueeBox.style.display = 'block';
+    marqueeBox.style.left = cssA.x + 'px'; marqueeBox.style.top = cssA.y + 'px';
+    marqueeBox.style.width = (cssB.x - cssA.x) + 'px'; marqueeBox.style.height = (cssB.y - cssA.y) + 'px';
+    state.selectedItems = itemsInRect({ x: mx, y: my, w: mw, h: mh });
+    renderSelection();
+  }
+  else if (tool === 'select' && state.selectedItems.length && state.dragOffset) {
+    const dx = pt.x - state.dragOffset.x, dy = pt.y - state.dragOffset.y;
+    moveSelectedGroup(dx, dy);
+    state.dragOffset = { x: pt.x, y: pt.y };
+    renderSelection();
     if (!state.mainRedrawScheduled) {
       state.mainRedrawScheduled = true;
-      requestAnimationFrame(() => { state.mainRedrawScheduled = false; renderMain(); });
+      requestAnimationFrame(() => { state.mainRedrawScheduled = false; renderMain(); renderStickies(); });
     }
   }
 }
@@ -1574,6 +1617,11 @@ function onUp(e) {
   else if (tool === 'select') {
     canvasWrap.classList.remove('grabbing');
     state.dragOffset = null;
+    if (state.marqueeStart) {
+      state.marqueeStart = null;
+      marqueeBox.style.display = 'none';
+      if (state.selectedItems.length) toast(`${state.selectedItems.length} selected`);
+    }
   }
 
   activeCtx.clearRect(0, 0, W, H);
@@ -1701,6 +1749,10 @@ function shapeBBox(sh) {
   return { x: x - pad, y: y - pad, w: w + pad*2, h: h + pad*2 };
 }
 function imageBBox(im) { return { x: im.x, y: im.y, w: im.w, h: im.h }; }
+function stickyBBox(s) {
+  const cx = s.x * W, cy = s.y * H, hw = 100, hh = 70;
+  return { x: cx - hw, y: cy - hh, w: hw * 2, h: hh * 2 };
+}
 
 function hitTest(pt) {
   const p = currentPage();
@@ -1733,54 +1785,102 @@ function hitTest(pt) {
   return null;
 }
 
-function selectItem(hit) {
-  state.selected = hit;
-  updateSelectionBBox();
+function rectsOverlap(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+function itemsInRect(rect) {
+  const p = currentPage();
+  const items = [];
+  p.strokes.forEach((s, i) => { const bb = strokeBBox(s); if (rectsOverlap(bb, rect)) items.push({ kind: 'stroke', index: i, bbox: bb }); });
+  p.shapes.forEach((s, i) => { const bb = shapeBBox(s); if (rectsOverlap(bb, rect)) items.push({ kind: 'shape', index: i, bbox: bb }); });
+  p.texts.forEach((t, i) => { const bb = textBBox(t); if (rectsOverlap(bb, rect)) items.push({ kind: 'text', index: i, bbox: bb }); });
+  p.images.forEach((im, i) => { const bb = imageBBox(im); if (rectsOverlap(bb, rect)) items.push({ kind: 'image', index: i, bbox: bb }); });
+  p.stickies.forEach((s, i) => { const bb = stickyBBox(s); if (rectsOverlap(bb, rect)) items.push({ kind: 'sticky', index: i, bbox: bb }); });
+  return items;
+}
+function selectAll() {
+  const p = currentPage();
+  const items = [];
+  p.strokes.forEach((s, i) => items.push({ kind: 'stroke', index: i, bbox: strokeBBox(s) }));
+  p.shapes.forEach((s, i) => items.push({ kind: 'shape', index: i, bbox: shapeBBox(s) }));
+  p.texts.forEach((t, i) => items.push({ kind: 'text', index: i, bbox: textBBox(t) }));
+  p.images.forEach((im, i) => items.push({ kind: 'image', index: i, bbox: imageBBox(im) }));
+  p.stickies.forEach((s, i) => items.push({ kind: 'sticky', index: i, bbox: stickyBBox(s) }));
+  state.selectedItems = items;
+  renderSelection();
+  if (items.length) toast(`${items.length} selected`);
 }
 function clearSelection() {
-  state.selected = null;
-  selectionBBox.style.display = 'none';
+  state.selectedItems = [];
+  renderSelection();
 }
-function updateSelectionBBox() {
-  if (!state.selected) return;
-  const css = canvasToCss({ x: state.selected.bbox.x, y: state.selected.bbox.y });
-  const css2 = canvasToCss({ x: state.selected.bbox.x + state.selected.bbox.w, y: state.selected.bbox.y + state.selected.bbox.h });
-  selectionBBox.style.display = 'block';
-  selectionBBox.style.left = css.x + 'px';
-  selectionBBox.style.top = css.y + 'px';
-  selectionBBox.style.width = (css2.x - css.x) + 'px';
-  selectionBBox.style.height = (css2.y - css.y) + 'px';
+function renderSelection() {
+  selectionLayer.innerHTML = '';
+  if (!state.selectedItems.length) return;
+  let gxMin = Infinity, gyMin = Infinity, gxMax = -Infinity, gyMax = -Infinity;
+  state.selectedItems.forEach(it => {
+    const css = canvasToCss({ x: it.bbox.x, y: it.bbox.y });
+    const css2 = canvasToCss({ x: it.bbox.x + it.bbox.w, y: it.bbox.y + it.bbox.h });
+    const box = document.createElement('div');
+    box.className = 'sel-box';
+    box.style.left = css.x + 'px'; box.style.top = css.y + 'px';
+    box.style.width = (css2.x - css.x) + 'px'; box.style.height = (css2.y - css.y) + 'px';
+    selectionLayer.appendChild(box);
+    gxMin = Math.min(gxMin, it.bbox.x); gyMin = Math.min(gyMin, it.bbox.y);
+    gxMax = Math.max(gxMax, it.bbox.x + it.bbox.w); gyMax = Math.max(gyMax, it.bbox.y + it.bbox.h);
+  });
+  const lbl = document.createElement('div');
+  lbl.className = 'sel-label';
+  const gcss = canvasToCss({ x: gxMin, y: gyMin });
+  lbl.style.left = gcss.x + 'px';
+  lbl.style.top = (gcss.y - 22) + 'px';
+  lbl.textContent = state.selectedItems.length === 1
+    ? 'Selected · drag to move · ⌫ delete'
+    : `${state.selectedItems.length} selected · drag to move · ⌫ delete`;
+  selectionLayer.appendChild(lbl);
 }
-function moveSelected(dx, dy) {
-  if (!state.selected) return;
+function moveSelectedGroup(dx, dy) {
   const p = currentPage();
-  const sel = state.selected;
-  if (sel.kind === 'stroke') {
-    const s = p.strokes[sel.index];
-    s.points.forEach(pt => { pt.x += dx; pt.y += dy; });
-  } else if (sel.kind === 'shape') {
-    const sh = p.shapes[sel.index];
-    sh.x1 += dx; sh.x2 += dx; sh.y1 += dy; sh.y2 += dy;
-  } else if (sel.kind === 'text') {
-    const t = p.texts[sel.index]; t.x += dx; t.y += dy;
-  } else if (sel.kind === 'image') {
-    const im = p.images[sel.index]; im.x += dx; im.y += dy;
-  }
+  let stickiesMoved = false;
+  state.selectedItems.forEach(it => {
+    if (it.kind === 'stroke') {
+      p.strokes[it.index].points.forEach(pt => { pt.x += dx; pt.y += dy; });
+    } else if (it.kind === 'shape') {
+      const sh = p.shapes[it.index];
+      sh.x1 += dx; sh.x2 += dx; sh.y1 += dy; sh.y2 += dy;
+    } else if (it.kind === 'text') {
+      const t = p.texts[it.index]; t.x += dx; t.y += dy;
+    } else if (it.kind === 'image') {
+      const im = p.images[it.index]; im.x += dx; im.y += dy;
+    } else if (it.kind === 'sticky') {
+      const s = p.stickies[it.index]; s.x += dx / W; s.y += dy / H;
+      stickiesMoved = true;
+    }
+    it.bbox.x += dx; it.bbox.y += dy;
+  });
+  if (stickiesMoved) renderStickies();
 }
 function deleteSelected() {
-  if (!state.selected) return;
+  if (!state.selectedItems.length) return;
   const p = currentPage();
-  const sel = state.selected;
-  let removedItem;
-  if (sel.kind === 'stroke') { removedItem = p.strokes.splice(sel.index, 1)[0]; p.history.push({kind:'remove', target:'stroke', item:removedItem}); }
-  else if (sel.kind === 'shape') { removedItem = p.shapes.splice(sel.index, 1)[0]; p.history.push({kind:'remove', target:'shape', item:removedItem}); }
-  else if (sel.kind === 'text') { removedItem = p.texts.splice(sel.index, 1)[0]; p.history.push({kind:'remove', target:'text', item:removedItem}); }
-  else if (sel.kind === 'image') { removedItem = p.images.splice(sel.index, 1)[0]; p.history.push({kind:'remove', target:'image', item:removedItem}); }
+  const byKind = {};
+  state.selectedItems.forEach(it => { (byKind[it.kind] = byKind[it.kind] || []).push(it.index); });
+  const removedGroup = [];
+  Object.keys(byKind).forEach(kind => {
+    const arr = arrFor(p, kind);
+    byKind[kind].sort((a, b) => b - a).forEach(idx => {
+      const item = arr.splice(idx, 1)[0];
+      if (item) removedGroup.push({ target: kind, item });
+    });
+  });
+  if (removedGroup.length) p.history.push({ kind: 'eraseGroup', items: removedGroup });
   p.redoStack = [];
+  const count = state.selectedItems.length;
   clearSelection();
   renderMain();
+  renderStickies();
   renderThumbs();
-  toast('Deleted');
+  toast(count > 1 ? `${count} items deleted` : 'Deleted');
 }
 
 function fitFrame() {
@@ -1800,7 +1900,7 @@ function fitFrame() {
 
 window.addEventListener('resize', () => {
   fitFrame();
-  if (state.selected) updateSelectionBBox();
+  if (state.selectedItems.length) renderSelection();
   renderStickies();
 });
 
@@ -2008,7 +2108,7 @@ function undo() {
   }
   p.redoStack.push(op);
   renderMain(); renderStickies(); renderThumbs();
-  if (state.selected) clearSelection();
+  if (state.selectedItems.length) clearSelection();
 }
 function redo() {
   const p = currentPage();
@@ -2058,7 +2158,7 @@ document.getElementById('btn-clear').addEventListener('click', () => {
 function gotoPage(idx) {
   if (idx < 0 || idx >= state.pages.length) return;
   if (activeEditor) commitTextEditor();
-  if (state.selected) clearSelection();
+  if (state.selectedItems.length) clearSelection();
   state.pageIdx = idx;
   renderBackground(); renderMain(); renderStickies();
   document.getElementById('page-cur').textContent = idx + 1;
@@ -2382,15 +2482,16 @@ document.addEventListener('keydown', e => {
   if (meta && (k === 'y' || (k === 'z' && e.shiftKey))) { e.preventDefault(); redo(); return; }
   if (meta && k === 'n') { e.preventDefault(); addPage(); return; }
   if (meta && k === 'p') { e.preventDefault(); exportPDF(); return; }
+  if (meta && k === 'a') { e.preventDefault(); selectTool('select'); selectAll(); return; }
 
   if (e.key === 'ArrowLeft') { e.preventDefault(); gotoPage(state.pageIdx - 1); return; }
   if (e.key === 'ArrowRight') { e.preventDefault(); gotoPage(state.pageIdx + 1); return; }
   if (k === 'f' && !meta) { e.preventDefault(); toggleFocus(); return; }
-  if ((e.key === 'Delete' || e.key === 'Backspace') && state.selected) { e.preventDefault(); deleteSelected(); return; }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedItems.length) { e.preventDefault(); deleteSelected(); return; }
   if (e.key === 'Escape') {
     modal.classList.remove('show');
     if (document.body.classList.contains('focus-mode')) toggleFocus(false);
-    if (state.selected) clearSelection();
+    if (state.selectedItems.length) clearSelection();
     return;
   }
 
