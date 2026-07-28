@@ -125,7 +125,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 /* Layout */
 .app { display: grid; grid-template-rows: 56px 1fr 48px; height: 100vh; margin-left: 104px; transition: margin-left 320ms cubic-bezier(0.4,0,0.2,1); }
-body.sidebar-expanded .app { margin-left: 224px; }
+body.sidebar-expanded .app { margin-left: 280px; }
 body.focus-mode .app { margin-left: 0; }
 
 .topbar {
@@ -165,6 +165,26 @@ body.focus-mode .app { margin-left: 0; }
 @keyframes pulse { 0%,100% { opacity: 0.45; } 50% { opacity: 1; } }
 .topbar-status strong { color: var(--ink); font-weight: 600; }
 .spacer { flex: 1; }
+.format-toggle {
+  position: relative; display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px 8px 12px; border-radius: 999px; flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(255,107,157,0.16), rgba(194,104,240,0.16) 45%, rgba(106,141,255,0.16));
+  border: 1px solid rgba(255,255,255,0.14);
+  color: var(--ink); font-size: 12px; font-weight: 600; letter-spacing: 0.02em;
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease, background 200ms ease;
+}
+.format-toggle:hover {
+  border-color: rgba(255,255,255,0.32);
+  box-shadow: 0 4px 16px rgba(150,90,255,0.35);
+  transform: translateY(-1px);
+}
+.format-toggle.open {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 0 1px rgba(240,192,138,0.25), 0 4px 16px rgba(150,90,255,0.35);
+}
+.format-toggle .format-icon { width: 15px; height: 15px; color: var(--gold-bright); flex-shrink: 0; }
+.format-toggle .format-chevron { width: 12px; height: 12px; color: var(--ink-mid); transition: transform 200ms ease; flex-shrink: 0; }
+.format-toggle.open .format-chevron { transform: rotate(180deg); }
 .actions { display: flex; align-items: center; gap: 4px; }
 .icon-btn {
   width: 38px; height: 38px; flex-shrink: 0;
@@ -385,7 +405,7 @@ body.focus-mode .app { margin-left: 0; }
   transition: width 320ms cubic-bezier(0.4,0,0.2,1);
   animation: sidebarIn 600ms cubic-bezier(0.34,1.56,0.64,1) 1900ms backwards;
 }
-body.sidebar-expanded .sidebar { width: 224px; }
+body.sidebar-expanded .sidebar { width: 280px; }
 .sidebar > * { flex-shrink: 0; }
 .sidebar::-webkit-scrollbar { width: 5px; }
 .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
@@ -393,30 +413,32 @@ body.sidebar-expanded .sidebar { width: 224px; }
 
 /* Collapse / expand toggle */
 .sidebar-toggle {
-  position: absolute; top: 50%; right: -13px; transform: translateY(-50%);
-  width: 26px; height: 26px; border-radius: 50%;
+  position: fixed; top: 50%; left: 88px; transform: translateY(-50%);
+  width: 34px; height: 34px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(15,16,20,0.95); border: 1px solid rgba(255,255,255,0.14);
-  color: var(--ink-mid); z-index: 102; cursor: pointer;
+  background: rgba(15,16,20,0.95); border: 1.5px solid rgba(255,255,255,0.14);
+  color: var(--ink-mid); z-index: 150; cursor: pointer;
   box-shadow: 0 3px 10px rgba(0,0,0,0.4);
-  transition: transform 320ms cubic-bezier(0.4,0,0.2,1), background 200ms ease, color 200ms ease, box-shadow 200ms ease;
+  transition: left 320ms cubic-bezier(0.4,0,0.2,1), background 200ms ease, color 200ms ease, box-shadow 200ms ease;
 }
 .sidebar-toggle:hover {
   background: linear-gradient(135deg, #ff6b9d, #c268f0 45%, #6a8dff);
   color: #fff; box-shadow: 0 4px 14px rgba(150,90,255,0.45);
 }
-.sidebar-toggle svg { width: 13px; height: 13px; transition: transform 320ms cubic-bezier(0.4,0,0.2,1); }
+.sidebar-toggle svg { width: 16px; height: 16px; transition: transform 320ms cubic-bezier(0.4,0,0.2,1); }
 body.sidebar-expanded .sidebar-toggle svg { transform: rotate(180deg); }
+body.sidebar-expanded .sidebar-toggle { left: 264px; }
+body.focus-mode .sidebar-toggle { opacity: 0; pointer-events: none; transition: opacity 400ms ease; }
 
 /* Expanded layout — icons gain visible text labels */
-.btn-label { display: none; font-size: 12.5px; font-weight: 500; white-space: nowrap; opacity: 0; }
+.btn-label { display: none; font-size: 14.5px; font-weight: 500; white-space: nowrap; opacity: 0; }
 body.sidebar-expanded .dock-group,
 body.sidebar-expanded .side-group,
 body.sidebar-expanded #dock-tools { align-items: stretch; width: 100%; }
 body.sidebar-expanded .dock-btn,
 body.sidebar-expanded .icon-btn,
 body.sidebar-expanded .sidebar .pdf-btn {
-  width: 100%; justify-content: flex-start; padding: 0 11px; gap: 11px;
+  width: 100%; justify-content: center; padding: 0 11px; gap: 11px;
 }
 body.sidebar-expanded .sidebar .pdf-btn span:not(.btn-label) { display: inline; }
 body.sidebar-expanded .btn-label { display: inline-block; opacity: 1; transition: opacity 200ms ease 140ms; }
@@ -505,11 +527,11 @@ body.sidebar-expanded .side-mark { align-self: flex-start; margin-left: 3px; }
 .sidebar .pdf-btn svg { width: 17px; height: 17px; }
 
 .bg-popover {
-  position: absolute; left: calc(100% + 12px); top: 0; bottom: auto; right: auto;
+  position: fixed; left: 0; top: 0;
   background: rgba(15,16,20,0.92);
   backdrop-filter: blur(20px);
   border: 1px solid var(--line-strong);
-  border-radius: 12px; padding: 12px; display: none; z-index: 50;
+  border-radius: 12px; padding: 12px; display: none; z-index: 500;
   box-shadow: 0 12px 32px rgba(0,0,0,0.5); width: 240px;
 }
 .bg-popover.show { display: block; animation: popIn 220ms cubic-bezier(0.34,1.56,0.64,1); }
@@ -519,6 +541,7 @@ body.sidebar-expanded .side-mark { align-self: flex-start; margin-left: 3px; }
   text-transform: uppercase; color: var(--ink-dim); margin-bottom: 10px;
 }
 .bg-options { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; }
+#format-options { grid-template-columns: repeat(3,1fr); }
 .bg-opt {
   height: 54px; border-radius: 6px; background: var(--paper);
   border: 2px solid transparent; cursor: pointer;
@@ -811,9 +834,6 @@ body { transition: background-color 900ms ease; }
 <div id="ambient"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
 
 <aside class="sidebar" id="sidebar">
-  <button class="sidebar-toggle" id="sidebar-toggle" type="button" title="Collapse/expand sidebar [ [ ]">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
-  </button>
   <div class="side-mark">
     <svg viewBox="0 0 36 36">
       <defs>
@@ -838,38 +858,6 @@ body { transition: background-color 900ms ease; }
     <span class="dock-size-pct" id="size-pct">10%</span>
   </div>
   <div class="dock-sep"></div>
-  <button class="dock-btn" id="btn-format" style="position:relative;">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="1.5" stroke-dasharray="3 2.5"/></svg>
-    <div class="tooltip">Format</div>
-    <div class="bg-popover" id="format-popover">
-      <div class="bg-popover-title">Canvas format</div>
-      <div class="bg-options" id="format-options">
-        <div class="bg-opt" data-format="landscape"><span class="bg-opt-label">16:9</span></div>
-        <div class="bg-opt" data-format="a4p"><span class="bg-opt-label">A4 ↕</span></div>
-        <div class="bg-opt" data-format="a4l"><span class="bg-opt-label">A4 ↔</span></div>
-        <div class="bg-opt" data-format="square"><span class="bg-opt-label">Square</span></div>
-      </div>
-      <div class="format-custom-row">
-        <input type="number" id="custom-w" placeholder="W" min="200" max="6000">
-        <input type="number" id="custom-h" placeholder="H" min="200" max="6000">
-        <button id="apply-custom-format" type="button">Set</button>
-      </div>
-    </div>
-  </button>
-  <button class="dock-btn" id="btn-bg" style="position:relative;">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
-    <div class="tooltip">Background</div>
-    <div class="bg-popover" id="bg-popover">
-      <div class="bg-popover-title">Page background</div>
-      <div class="bg-options">
-        <div class="bg-opt bg-blank" data-bg="blank"><span class="bg-opt-label">Blank</span></div>
-        <div class="bg-opt bg-grid" data-bg="grid"><span class="bg-opt-label">Grid</span></div>
-        <div class="bg-opt bg-dots" data-bg="dots"><span class="bg-opt-label">Dots</span></div>
-        <div class="bg-opt bg-lines" data-bg="lines"><span class="bg-opt-label">Lines</span></div>
-      </div>
-    </div>
-  </button>
-  <div class="dock-sep"></div>
   <button class="icon-btn" id="btn-undo">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6.7 3L3 13"/></svg>
     <div class="tooltip">Undo<kbd>⌘Z</kbd></div>
@@ -891,16 +879,15 @@ body { transition: background-color 900ms ease; }
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
     <div class="tooltip">Export JPG</div>
   </button>
-  <button class="icon-btn" id="btn-help">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-    <div class="tooltip">Shortcuts<kbd>?</kbd></div>
-  </button>
   <button class="pdf-btn" id="btn-pdf">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
     <span>Export PDF</span>
     <div class="tooltip">Export all pages<kbd>⌘P</kbd></div>
   </button>
 </aside>
+<button class="sidebar-toggle" id="sidebar-toggle" type="button" title="Collapse/expand sidebar [ [ ]">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+</button>
 <div class="sidebar-fade" id="sidebar-fade-top"></div>
 <div class="sidebar-fade" id="sidebar-fade-bottom"></div>
 
@@ -967,7 +954,21 @@ body { transition: background-color 900ms ease; }
     </div>
 
     <div class="spacer"></div>
+
+    <button class="format-toggle" id="btn-format" type="button">
+      <svg class="format-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="1.5" stroke-dasharray="3 2.5"/></svg>
+      <span id="format-current-label">16:9</span>
+      <svg class="format-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
   </header>
+  <div class="bg-popover" id="format-popover">
+    <div class="bg-popover-title">Orientation</div>
+    <div class="bg-options" id="format-options">
+      <div class="bg-opt" data-format="a4p"><span class="bg-opt-label">A4</span></div>
+      <div class="bg-opt" data-format="landscape"><span class="bg-opt-label">16:9</span></div>
+      <div class="bg-opt" data-format="square"><span class="bg-opt-label">Square</span></div>
+    </div>
+  </div>
 
   <main class="stage">
     <div class="canvas-frame">
@@ -1218,42 +1219,39 @@ function updateSizeDot() {
 }
 updateSizeDot();
 
-const bgBtn = document.getElementById('btn-bg');
-const bgPopover = document.getElementById('bg-popover');
-bgBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  bgPopover.classList.toggle('show');
-});
-document.addEventListener('click', (e) => {
-  if (!bgPopover.contains(e.target) && !bgBtn.contains(e.target)) bgPopover.classList.remove('show');
-});
-document.querySelectorAll('.bg-opt').forEach(o => {
-  o.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const p = currentPage();
-    p.background = o.dataset.bg;
-    renderBackground();
-    document.querySelectorAll('.bg-opt').forEach(x => x.classList.toggle('active', x === o));
-    renderThumbs();
-    bgPopover.classList.remove('show');
-    toast(`Background · ${o.dataset.bg}`);
-  });
-});
-
 /* ---- Format / orientation ---- */
 const formatPopover = document.getElementById('format-popover');
 const formatBtn = document.getElementById('btn-format');
+const formatCurrentLabel = document.getElementById('format-current-label');
+function positionFormatPopover() {
+  const r = formatBtn.getBoundingClientRect();
+  const popW = 240;
+  let left = r.left + r.width / 2 - popW / 2;
+  left = Math.max(8, Math.min(left, window.innerWidth - popW - 8));
+  formatPopover.style.left = left + 'px';
+  formatPopover.style.bottom = 'auto';
+  formatPopover.style.top = (r.bottom + 12) + 'px';
+}
 formatBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  formatPopover.classList.toggle('show');
+  const opening = !formatPopover.classList.contains('show');
+  if (opening) positionFormatPopover();
+  formatPopover.classList.toggle('show', opening);
+  formatBtn.classList.toggle('open', opening);
 });
+window.addEventListener('resize', () => { if (formatPopover.classList.contains('show')) positionFormatPopover(); });
 document.addEventListener('click', (e) => {
-  if (!formatPopover.contains(e.target) && !formatBtn.contains(e.target)) formatPopover.classList.remove('show');
+  if (!formatPopover.contains(e.target) && !formatBtn.contains(e.target)) {
+    formatPopover.classList.remove('show');
+    formatBtn.classList.remove('open');
+  }
 });
 function markActiveFormat() {
   document.querySelectorAll('#format-options .bg-opt').forEach(o => {
     const f = FORMATS[o.dataset.format];
-    o.classList.toggle('active', !!f && f.w === W && f.h === H);
+    const active = !!f && f.w === W && f.h === H;
+    o.classList.toggle('active', active);
+    if (active && formatCurrentLabel) formatCurrentLabel.textContent = f.label;
   });
 }
 document.querySelectorAll('#format-options .bg-opt').forEach(o => {
@@ -1263,23 +1261,10 @@ document.querySelectorAll('#format-options .bg-opt').forEach(o => {
     resizeCanvasFormat(f.w, f.h);
     markActiveFormat();
     formatPopover.classList.remove('show');
+    formatBtn.classList.remove('open');
     toast(`Format · ${f.label}`);
   });
 });
-document.getElementById('apply-custom-format').addEventListener('click', (e) => {
-  e.stopPropagation();
-  const w = Math.round(+document.getElementById('custom-w').value);
-  const h = Math.round(+document.getElementById('custom-h').value);
-  if (w >= 200 && h >= 200 && w <= 6000 && h <= 6000) {
-    resizeCanvasFormat(w, h);
-    markActiveFormat();
-    formatPopover.classList.remove('show');
-    toast(`Format · ${w}×${h}`);
-  } else {
-    toast('Enter width & height between 200–6000');
-  }
-});
-
 function resizeCanvasFormat(newW, newH) {
   const oldW = W, oldH = H;
   if (newW === oldW && newH === oldH) return;
@@ -2616,7 +2601,6 @@ SHORTCUTS.forEach(([label, k]) => {
   r.innerHTML = `<span>${label}</span><kbd>${k}</kbd>`;
   sg.appendChild(r);
 });
-document.getElementById('btn-help').addEventListener('click', () => modal.classList.add('show'));
 document.getElementById('modal-close').addEventListener('click', () => modal.classList.remove('show'));
 modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
 
