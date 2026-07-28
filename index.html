@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Kingshuk's Whiteboard — an infinite-canvas whiteboard with pressure-sensitive drawing, sticky notes, smart shape constraints, focus mode, and elegant PDF export.">
+<meta name="description" content="Whiteboard — an infinite-canvas whiteboard with pressure-sensitive drawing, sticky notes, smart shape constraints, focus mode, and elegant PDF export.">
 <meta name="theme-color" content="#0f1014">
 <meta name="color-scheme" content="dark">
-<meta property="og:title" content="Kingshuk's Whiteboard">
+<meta property="og:title" content="Whiteboard">
 <meta property="og:description" content="An infinite canvas for sketching, planning, and presenting.">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Ccircle cx='18' cy='18' r='16.5' fill='%23d4a574'/%3E%3Ctext x='18' y='25' text-anchor='middle' font-family='Georgia,serif' font-style='italic' font-size='20' fill='%230a0a0d'%3EK%3C/text%3E%3Ccircle cx='28' cy='9' r='2.6' fill='%23c2585b'/%3E%3C/svg%3E">
-<title>Kingshuk's Whiteboard</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ff6b9d'/%3E%3Cstop offset='0.5' stop-color='%23c268f0'/%3E%3Cstop offset='1' stop-color='%236a8dff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='18' cy='18' r='16.5' fill='url(%23g)'/%3E%3Cpath d='M11 22 L15 22 L25 12 L21 8 L11 18 Z' fill='%23fff' opacity='0.92'/%3E%3C/svg%3E">
+<title>Whiteboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@300;400;500;600;700;800&family=Caveat:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -58,6 +58,31 @@ body {
 }
 button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
 
+/* Soothing continuous ambient animation — slow drifting glow, not distracting */
+#ambient { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+#ambient span { position: absolute; border-radius: 50%; filter: blur(90px); }
+#ambient .a1 {
+  width: 42vw; height: 42vw; top: -12%; left: -10%;
+  background: radial-gradient(circle, rgba(255,107,157,0.13), transparent 70%);
+  animation: driftA 46s ease-in-out infinite alternate;
+}
+#ambient .a2 {
+  width: 46vw; height: 46vw; bottom: -16%; right: -12%;
+  background: radial-gradient(circle, rgba(106,141,255,0.11), transparent 70%);
+  animation: driftB 54s ease-in-out infinite alternate;
+}
+#ambient .a3 {
+  width: 34vw; height: 34vw; top: 38%; left: 46%;
+  background: radial-gradient(circle, rgba(194,104,240,0.10), transparent 70%);
+  animation: driftC 60s ease-in-out infinite alternate;
+}
+@keyframes driftA { from { transform: translate(0,0) scale(1); } to { transform: translate(4vw, 5vw) scale(1.12); } }
+@keyframes driftB { from { transform: translate(0,0) scale(1); } to { transform: translate(-5vw, -4vw) scale(1.08); } }
+@keyframes driftC { from { transform: translate(0,0) scale(1); } to { transform: translate(-3vw, 4vw) scale(0.94); } }
+@media (prefers-reduced-motion: reduce) {
+  #ambient span { animation: none !important; }
+}
+
 /* Welcome */
 #welcome {
   position: fixed; inset: 0; z-index: 1000;
@@ -74,13 +99,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   stroke-dasharray: 320; stroke-dashoffset: 320;
   animation: drawRing 900ms ease-out 100ms forwards;
 }
-.welcome-svg .k1, .welcome-svg .k2, .welcome-svg .k3 {
-  fill: none; stroke: var(--gold-bright); stroke-width: 7;
+.welcome-svg .flourish {
+  fill: none; stroke: url(#welcomeGrad); stroke-width: 6;
   stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 220; stroke-dashoffset: 220;
+  animation: drawK 1100ms ease-out 500ms forwards;
 }
-.welcome-svg .k1 { stroke-dasharray: 100; stroke-dashoffset: 100; animation: drawK 500ms ease-out 600ms forwards; }
-.welcome-svg .k2 { stroke-dasharray: 90;  stroke-dashoffset: 90;  animation: drawK 400ms ease-out 1000ms forwards; }
-.welcome-svg .k3 { stroke-dasharray: 90;  stroke-dashoffset: 90;  animation: drawK 400ms ease-out 1300ms forwards; }
 .welcome-svg .dot { fill: var(--crimson); opacity: 0; animation: dotPop 400ms ease-out 1700ms forwards; }
 @keyframes drawRing { to { stroke-dashoffset: 0; } }
 @keyframes drawK    { to { stroke-dashoffset: 0; } }
@@ -100,7 +124,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Layout */
-.app { display: grid; grid-template-rows: 56px 1fr 48px; height: 100vh; }
+.app { display: grid; grid-template-rows: 56px 1fr 48px; height: 100vh; margin-left: 104px; }
+body.focus-mode .app { margin-left: 0; }
 
 .topbar {
   display: flex; align-items: center; padding: 0 20px;
@@ -141,22 +166,28 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .spacer { flex: 1; }
 .actions { display: flex; align-items: center; gap: 4px; }
 .icon-btn {
-  width: 36px; height: 36px;
+  width: 40px; height: 40px;
   display: flex; align-items: center; justify-content: center;
-  border-radius: 9px; color: var(--ink-mid);
-  transition: all var(--t); position: relative;
+  border-radius: 11px; color: var(--ink-mid);
+  transition: transform 220ms cubic-bezier(0.34,1.56,0.64,1), background 220ms ease, color 220ms ease, box-shadow 220ms ease;
+  position: relative;
 }
-.icon-btn:hover { background: var(--bg-elev); color: var(--ink); }
+.icon-btn:hover {
+  background: linear-gradient(135deg, #ff6b9d, #c268f0 45%, #6a8dff);
+  color: #fff; transform: translateX(3px) scale(1.06);
+  box-shadow: 0 4px 14px rgba(150,90,255,0.4);
+}
 .icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.icon-btn:disabled:hover { background: none; color: var(--ink-mid); }
+.icon-btn:disabled:hover { background: none; color: var(--ink-mid); transform: none; box-shadow: none; }
 .icon-btn svg { width: 16px; height: 16px; }
 .pdf-btn {
-  height: 36px; padding: 0 16px; margin-left: 4px;
+  height: 40px; padding: 0 16px; margin-left: 0;
   display: flex; align-items: center; gap: 8px;
-  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
-  color: var(--bg-void); border-radius: 9px;
-  font-size: 13px; font-weight: 600;
-  transition: all var(--t); position: relative; overflow: hidden;
+  background: linear-gradient(135deg, #ff6b9d, #c268f0 45%, #6a8dff);
+  color: #fff; border-radius: 11px;
+  font-size: 13px; font-weight: 700;
+  box-shadow: 0 4px 14px rgba(150,90,255,0.35);
+  transition: transform 220ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 220ms ease, filter 220ms ease; position: relative; overflow: hidden;
 }
 .pdf-btn::before {
   content: ''; position: absolute; inset: 0;
@@ -164,9 +195,17 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   opacity: 0; transition: opacity var(--t);
 }
 .pdf-btn:hover::before { opacity: 0.25; }
-.pdf-btn:hover { box-shadow: 0 6px 24px rgba(240,192,138,0.4); transform: translateY(-1px); }
+.pdf-btn:hover { box-shadow: 0 6px 22px rgba(150,90,255,0.55); transform: translateX(3px) scale(1.04); filter: brightness(1.06); }
 .pdf-btn svg { width: 14px; height: 14px; position: relative; z-index: 1; }
 .pdf-btn span { position: relative; z-index: 1; }
+.icon-btn.unsaved::after, .pdf-btn.unsaved::after {
+  content: ''; position: absolute; top: 3px; right: 3px;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--crimson); box-shadow: 0 0 6px rgba(194,88,91,0.7);
+  animation: unsavedPulse 1.8s ease-in-out infinite;
+  z-index: 2;
+}
+@keyframes unsavedPulse { 0%,100% { opacity: 0.6; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.15); } }
 
 .tooltip {
   position: absolute;
@@ -190,7 +229,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .stage {
   position: relative;
   display: flex; align-items: center; justify-content: center;
-  padding: 32px 32px 130px;
+  padding: 32px;
   overflow: hidden;
   background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%);
 }
@@ -330,59 +369,61 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .canvas-watermark::before { content: '~ '; color: rgba(0,0,0,0.13); }
 
-/* Floating dock */
-.dock {
-  position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
-  display: flex; align-items: center; padding: 7px;
-  background: rgba(15,16,20,0.72);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 14px;
-  box-shadow:
-    0 12px 40px rgba(0,0,0,0.5),
-    0 2px 6px rgba(0,0,0,0.3),
-    inset 0 1px 0 rgba(255,255,255,0.06);
-  z-index: 30;
-  animation: dockIn 600ms cubic-bezier(0.34,1.56,0.64,1) 1900ms backwards;
+/* Left sidebar — all options live here, always visible */
+.sidebar {
+  position: fixed; left: 0; top: 0; bottom: 0; width: 104px; z-index: 100;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 4px; padding: 14px 8px 16px;
+  overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
+  background: rgba(15,16,20,0.82);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border-right: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 8px 0 30px rgba(0,0,0,0.35);
+  animation: sidebarIn 600ms cubic-bezier(0.34,1.56,0.64,1) 1900ms backwards;
 }
-@keyframes dockIn { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%); } }
-.dock::before {
-  content: ''; position: absolute; inset: -1px; border-radius: 15px;
-  background: linear-gradient(135deg, rgba(212,165,116,0.18), transparent 30%, transparent 70%, rgba(212,165,116,0.12));
-  z-index: -1;
-}
-.dock-group { display: flex; align-items: center; gap: 1px; padding: 0 4px; }
-.dock-sep { width: 1px; height: 22px; background: rgba(255,255,255,0.09); margin: 0 2px; }
+.sidebar::-webkit-scrollbar { display: none; }
+@keyframes sidebarIn { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: translateX(0); } }
+.side-mark { width: 34px; height: 34px; margin-bottom: 6px; flex-shrink: 0; }
+.side-mark svg { width: 100%; height: 100%; }
+.dock-group { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.dock-sep { width: 60%; height: 1px; background: rgba(255,255,255,0.09); margin: 5px 0; flex-shrink: 0; }
 .dock-btn {
-  width: 36px; height: 36px;
+  width: 40px; height: 40px;
   display: flex; align-items: center; justify-content: center;
-  border-radius: 9px; color: rgba(255,255,255,0.62);
-  transition: all 180ms; position: relative;
+  border-radius: 11px; color: rgba(255,255,255,0.62);
+  transition: transform 220ms cubic-bezier(0.34,1.56,0.64,1), background 220ms ease, color 220ms ease, box-shadow 220ms ease;
+  position: relative; flex-shrink: 0;
 }
-.dock-btn:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.96); }
+.dock-btn:hover {
+  background: linear-gradient(135deg, #ff6b9d, #c268f0 45%, #6a8dff);
+  color: #fff; transform: translateX(3px) scale(1.06);
+  box-shadow: 0 4px 14px rgba(150,90,255,0.4);
+}
 .dock-btn.active {
-  background: var(--gold-soft); color: var(--gold-bright);
-  box-shadow: inset 0 0 0 1px rgba(212,165,116,0.3), 0 0 12px rgba(240,192,138,0.18);
+  background: linear-gradient(135deg, #ff6b9d, #c268f0 45%, #6a8dff);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(150,90,255,0.45), inset 0 1px 0 rgba(255,255,255,0.3);
 }
 .dock-btn svg { width: 17px; height: 17px; }
 .dock-btn:hover .tooltip, .dock-color:hover .tooltip { opacity: 1; }
-.dock .dock-btn .tooltip, .dock .dock-color .tooltip {
-  bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%);
+.sidebar .dock-btn .tooltip, .sidebar .dock-color .tooltip, .sidebar .icon-btn .tooltip, .sidebar .pdf-btn .tooltip {
+  left: calc(100% + 10px); top: 50%; bottom: auto; transform: translateY(-50%);
 }
+.side-colors { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
 .dock-color {
-  width: 22px; height: 22px; border-radius: 50%; margin: 0 3px;
+  width: 22px; height: 22px; border-radius: 50%;
   cursor: pointer; border: 2px solid transparent;
   transition: all var(--t-spring); position: relative;
   box-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
-.dock-color:hover { transform: scale(1.18); }
+.dock-color:hover { transform: scale(1.22) translateX(2px); box-shadow: 0 0 0 2px rgba(255,255,255,0.15), 0 4px 10px rgba(0,0,0,0.4); }
 .dock-color.active {
   transform: scale(1.12);
   box-shadow: 0 0 0 2px var(--bg-deep), 0 0 0 3.5px var(--ink), 0 2px 6px rgba(0,0,0,0.3);
 }
 .dock-custom {
-  width: 22px; height: 22px; border-radius: 50%; margin: 0 3px;
+  width: 22px; height: 22px; border-radius: 50%; margin-top: 4px;
   background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
   cursor: pointer; position: relative;
   box-shadow: 0 1px 2px rgba(0,0,0,0.3), inset 0 0 0 1.5px var(--bg-deep);
@@ -390,8 +431,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .dock-custom:hover { transform: scale(1.15); }
 .dock-custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.dock-size { display: flex; align-items: center; gap: 8px; padding: 0 6px; min-width: 110px; }
-.dock-size-pct { font-family: var(--mono); font-size: 9.5px; color: var(--ink-dim); min-width: 28px; text-align: right; flex-shrink: 0; }
+.dock-size { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 4px 0; width: 100%; }
+.dock-size-pct { font-family: var(--mono); font-size: 9.5px; color: var(--ink-dim); }
 .dock-size-dot {
   width: 24px; height: 24px;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
@@ -399,7 +440,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .dock-size-dot div { background: var(--ink); border-radius: 50%; transition: var(--t-spring); }
 .dock-size-slider {
   -webkit-appearance: none; appearance: none;
-  flex: 1; height: 3px;
+  width: 78px; height: 3px;
   background: rgba(255,255,255,0.12); border-radius: 2px; cursor: pointer;
 }
 .dock-size-slider::-webkit-slider-thumb {
@@ -412,9 +453,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   width: 12px; height: 12px; background: var(--ink);
   border-radius: 50%; border: none; cursor: pointer;
 }
+.sidebar .pdf-btn { width: 40px; height: 40px; padding: 0; border-radius: 11px; margin: 0; }
+.sidebar .pdf-btn span { display: none; }
+.sidebar .pdf-btn svg { width: 17px; height: 17px; }
 
 .bg-popover {
-  position: absolute; bottom: calc(100% + 12px); right: 8px;
+  position: absolute; left: calc(100% + 12px); top: 0; bottom: auto; right: auto;
   background: rgba(15,16,20,0.92);
   backdrop-filter: blur(20px);
   border: 1px solid var(--line-strong);
@@ -519,28 +563,22 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .thumb-del:hover { background: var(--crimson); color: white; }
 .add-page {
   flex-shrink: 0; width: 70px; height: 40px;
-  border-radius: 11px; border: none; cursor: pointer;
-  background: linear-gradient(135deg, #ff6b9d 0%, #c268f0 45%, #6a8dff 100%);
+  border-radius: 14px; border: none; cursor: pointer;
+  background: linear-gradient(135deg, #ff8a65 0%, #ff6b9d 40%, #8a6bff 100%);
   color: #fff; display: flex; align-items: center; justify-content: center;
-  gap: 4px; font-size: 10px; font-weight: 800; letter-spacing: 0.06em;
-  box-shadow:
-    0 3px 0 rgba(30,10,40,0.45),
-    0 7px 18px rgba(150,90,255,0.45),
-    inset 0 1px 0 rgba(255,255,255,0.35);
-  transform: perspective(400px) rotateX(0deg) translateY(0) scale(1);
+  gap: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  box-shadow: 0 3px 0 rgba(28,23,17,0.25), 0 8px 20px rgba(138,107,255,0.35), inset 0 1px 0 rgba(255,255,255,0.4);
+  transform: perspective(500px) rotateX(0deg) translateY(0) scale(1);
   transition: transform 240ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 240ms ease, filter 240ms ease;
 }
 .add-page:hover {
-  transform: perspective(400px) rotateX(10deg) translateY(-3px) scale(1.05);
-  box-shadow:
-    0 6px 0 rgba(30,10,40,0.45),
-    0 16px 30px rgba(150,90,255,0.6),
-    inset 0 1px 0 rgba(255,255,255,0.5);
-  filter: brightness(1.1) saturate(1.2);
+  transform: perspective(500px) rotateX(8deg) translateY(-3px) scale(1.05);
+  box-shadow: 0 6px 0 rgba(28,23,17,0.25), 0 16px 30px rgba(138,107,255,0.5), inset 0 1px 0 rgba(255,255,255,0.5);
+  filter: brightness(1.08) saturate(1.2);
 }
 .add-page:active {
-  transform: perspective(400px) rotateX(3deg) translateY(1px) scale(0.97);
-  box-shadow: 0 1px 0 rgba(30,10,40,0.45), 0 4px 10px rgba(150,90,255,0.4);
+  transform: perspective(500px) rotateX(2deg) translateY(1px) scale(0.99);
+  box-shadow: 0 1px 0 rgba(28,23,17,0.25), 0 4px 10px rgba(138,107,255,0.4);
 }
 .add-page svg { width: 13px; height: 13px; transition: transform 280ms cubic-bezier(0.34,1.56,0.64,1); }
 .add-page:hover svg { transform: rotate(180deg) scale(1.2); }
@@ -645,7 +683,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* Focus mode */
 body.focus-mode .topbar,
 body.focus-mode .pagestrip,
-body.focus-mode .dock {
+body.focus-mode .sidebar {
   opacity: 0; pointer-events: none;
   transition: opacity 400ms ease;
 }
@@ -673,7 +711,7 @@ body.theme-afternoon { --gold:#d4a574; --gold-bright:#f0c08a; --gold-glow:rgba(2
 body.theme-evening   { --gold:#dd8f5b; --gold-bright:#ffb37a; --gold-glow:rgba(255,179,122,0.4); --crimson:#cf5750; --azure:#c98bd6; --bg-void:#0e0a0c; --bg-deep:#161011; --bg-card:#201619; --bg-elev:#2a1c20; }
 body.theme-night     { --gold:#8fa3d4; --gold-bright:#b7c6ef; --gold-glow:rgba(183,198,239,0.35); --crimson:#a15b8a; --azure:#5c8fc9; --bg-void:#040508; --bg-deep:#080a10; --bg-card:#0e1119; --bg-elev:#141826; }
 body { transition: background-color 900ms ease; }
-.topbar, .dock, .pagestrip, .bg-popover, .modal, .loader-ring { transition: background-color 900ms ease, border-color 900ms ease; }
+.topbar, .sidebar, .pagestrip, .bg-popover, .modal, .loader-ring { transition: background-color 900ms ease, border-color 900ms ease; }
 
 /* Creative chrono clock */
 .chrono { display: flex; align-items: center; gap: 12px; margin-left: 24px; padding-right: 18px; border-right: 1px solid var(--line); }
@@ -707,26 +745,123 @@ body { transition: background-color 900ms ease; }
   .chrono { display: none; }
 }
 @media (max-width: 760px) {
-  .dock { padding: 6px; }
-  .dock-btn { width: 32px; height: 32px; }
+  .sidebar { width: 76px; padding: 10px 6px; }
+  .app { margin-left: 76px; }
+  .dock-btn { width: 34px; height: 34px; }
+  .dock-btn svg { width: 15px; height: 15px; }
   .dock-color { width: 18px; height: 18px; }
-  .pdf-btn span { display: none; }
-  .pdf-btn { padding: 0 10px; }
+  .icon-btn, .sidebar .pdf-btn { width: 34px; height: 34px; }
 }
 </style>
 </head>
 <body>
 
+<div id="ambient"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="side-mark">
+    <svg viewBox="0 0 36 36">
+      <defs>
+        <linearGradient id="sidemarkgrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ff6b9d"/>
+          <stop offset="50%" stop-color="#c268f0"/>
+          <stop offset="100%" stop-color="#6a8dff"/>
+        </linearGradient>
+      </defs>
+      <circle cx="18" cy="18" r="16.5" fill="url(#sidemarkgrad)"/>
+      <path d="M11 22 L15 22 L25 12 L21 8 L11 18 Z" fill="#fff" opacity="0.94"/>
+    </svg>
+  </div>
+  <div class="dock-group" id="dock-tools"></div>
+  <div class="dock-sep"></div>
+  <div class="dock-group side-colors" id="dock-colors"></div>
+  <div class="dock-custom"><input type="color" id="custom-color" value="#7c3aed"></div>
+  <div class="dock-sep"></div>
+  <div class="dock-size">
+    <div class="dock-size-dot"><div id="size-preview-dot"></div></div>
+    <input type="range" min="1" max="40" value="4" class="dock-size-slider" id="size-slider">
+    <span class="dock-size-pct" id="size-pct">10%</span>
+  </div>
+  <div class="dock-sep"></div>
+  <button class="dock-btn" id="btn-format" style="position:relative;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="1.5" stroke-dasharray="3 2.5"/></svg>
+    <div class="tooltip">Format</div>
+    <div class="bg-popover" id="format-popover">
+      <div class="bg-popover-title">Canvas format</div>
+      <div class="bg-options" id="format-options">
+        <div class="bg-opt" data-format="landscape"><span class="bg-opt-label">16:9</span></div>
+        <div class="bg-opt" data-format="a4p"><span class="bg-opt-label">A4 ↕</span></div>
+        <div class="bg-opt" data-format="a4l"><span class="bg-opt-label">A4 ↔</span></div>
+        <div class="bg-opt" data-format="square"><span class="bg-opt-label">Square</span></div>
+      </div>
+      <div class="format-custom-row">
+        <input type="number" id="custom-w" placeholder="W" min="200" max="6000">
+        <input type="number" id="custom-h" placeholder="H" min="200" max="6000">
+        <button id="apply-custom-format" type="button">Set</button>
+      </div>
+    </div>
+  </button>
+  <button class="dock-btn" id="btn-bg" style="position:relative;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+    <div class="tooltip">Background</div>
+    <div class="bg-popover" id="bg-popover">
+      <div class="bg-popover-title">Page background</div>
+      <div class="bg-options">
+        <div class="bg-opt bg-blank" data-bg="blank"><span class="bg-opt-label">Blank</span></div>
+        <div class="bg-opt bg-grid" data-bg="grid"><span class="bg-opt-label">Grid</span></div>
+        <div class="bg-opt bg-dots" data-bg="dots"><span class="bg-opt-label">Dots</span></div>
+        <div class="bg-opt bg-lines" data-bg="lines"><span class="bg-opt-label">Lines</span></div>
+      </div>
+    </div>
+  </button>
+  <div class="dock-sep"></div>
+  <button class="icon-btn" id="btn-undo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6.7 3L3 13"/></svg>
+    <div class="tooltip">Undo<kbd>⌘Z</kbd></div>
+  </button>
+  <button class="icon-btn" id="btn-redo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6.7 3L21 13"/></svg>
+    <div class="tooltip">Redo<kbd>⌘⇧Z</kbd></div>
+  </button>
+  <button class="icon-btn" id="btn-clear">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+    <div class="tooltip">Clear page</div>
+  </button>
+  <button class="icon-btn" id="btn-focus">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
+    <div class="tooltip">Focus mode<kbd>F</kbd></div>
+  </button>
+  <div class="dock-sep"></div>
+  <button class="icon-btn" id="btn-jpg">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+    <div class="tooltip">Export JPG</div>
+  </button>
+  <button class="icon-btn" id="btn-help">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+    <div class="tooltip">Shortcuts<kbd>?</kbd></div>
+  </button>
+  <button class="pdf-btn" id="btn-pdf">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
+    <span>Export PDF</span>
+    <div class="tooltip">Export all pages<kbd>⌘P</kbd></div>
+  </button>
+</aside>
+
 <div id="welcome">
   <svg class="welcome-svg" viewBox="0 0 110 110">
+    <defs>
+      <linearGradient id="welcomeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#ff6b9d"/>
+        <stop offset="50%" stop-color="#c268f0"/>
+        <stop offset="100%" stop-color="#6a8dff"/>
+      </linearGradient>
+    </defs>
     <circle class="ring" cx="55" cy="55" r="50"/>
-    <path class="k1" d="M 38 32 L 38 80"/>
-    <path class="k2" d="M 39 56 L 72 32"/>
-    <path class="k3" d="M 39 56 L 74 80"/>
+    <path class="flourish" d="M 26 78 Q 30 40 50 44 Q 70 48 58 68 Q 48 84 78 32"/>
     <circle class="dot" cx="84" cy="26" r="4.5"/>
   </svg>
-  <div class="welcome-title">Kingshuk's <em>Whiteboard</em></div>
-  <div class="welcome-sub">An infinite canvas · est. 2026</div>
+  <div class="welcome-title">White<em>board</em></div>
+  <div class="welcome-sub">An infinite canvas · for anyone</div>
 </div>
 
 <div class="app">
@@ -735,18 +870,18 @@ body { transition: background-color 900ms ease; }
       <div class="brand-mark">
         <svg viewBox="0 0 36 36">
           <defs>
-            <linearGradient id="goldgrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#f0c08a"/>
-              <stop offset="100%" stop-color="#c89860"/>
+            <linearGradient id="brandgrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#ff6b9d"/>
+              <stop offset="50%" stop-color="#c268f0"/>
+              <stop offset="100%" stop-color="#6a8dff"/>
             </linearGradient>
           </defs>
-          <circle cx="18" cy="18" r="16.5" fill="url(#goldgrad)"/>
-          <text x="18" y="25" text-anchor="middle" font-family="Instrument Serif, Georgia, serif" font-style="italic" font-size="20" fill="#0a0a0d">K</text>
-          <circle cx="28" cy="9" r="2.6" fill="#c2585b"/>
+          <circle cx="18" cy="18" r="16.5" fill="url(#brandgrad)"/>
+          <path d="M11 22 L15 22 L25 12 L21 8 L11 18 Z" fill="#fff" opacity="0.94"/>
         </svg>
       </div>
       <div>
-        <div class="brand-name">Kingshuk's <em>Whiteboard</em></div>
+        <div class="brand-name">White<em>board</em></div>
         <div class="brand-name"><span class="by">An infinite canvas</span></div>
       </div>
     </div>
@@ -775,38 +910,6 @@ body { transition: background-color 900ms ease; }
     </div>
 
     <div class="spacer"></div>
-
-    <div class="actions">
-      <button class="icon-btn" id="btn-undo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6.7 3L3 13"/></svg>
-        <div class="tooltip">Undo<kbd>⌘Z</kbd></div>
-      </button>
-      <button class="icon-btn" id="btn-redo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6.7 3L21 13"/></svg>
-        <div class="tooltip">Redo<kbd>⌘⇧Z</kbd></div>
-      </button>
-      <button class="icon-btn" id="btn-clear">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        <div class="tooltip">Clear page</div>
-      </button>
-      <button class="icon-btn" id="btn-focus">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
-        <div class="tooltip">Focus mode<kbd>F</kbd></div>
-      </button>
-      <button class="icon-btn" id="btn-png">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-        <div class="tooltip">Export PNG</div>
-      </button>
-      <button class="icon-btn" id="btn-help">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-        <div class="tooltip">Shortcuts<kbd>?</kbd></div>
-      </button>
-      <button class="pdf-btn" id="btn-pdf">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
-        <span>Export PDF</span>
-        <div class="tooltip">Export all pages<kbd>⌘P</kbd></div>
-      </button>
-    </div>
   </header>
 
   <main class="stage">
@@ -821,54 +924,8 @@ body { transition: background-color 900ms ease; }
         <div class="laser-cursor" id="laser-cursor"></div>
         <div class="selection-layer" id="selection-layer"></div>
         <div class="marquee-box" id="marquee-box"></div>
-        <div class="canvas-watermark">Kingshuk's Whiteboard</div>
+        <div class="canvas-watermark">Whiteboard</div>
       </div>
-    </div>
-
-    <div class="dock" id="dock">
-      <div class="dock-group" id="dock-tools"></div>
-      <div class="dock-sep"></div>
-      <div class="dock-group" id="dock-colors"></div>
-      <div class="dock-custom"><input type="color" id="custom-color" value="#7c3aed"></div>
-      <div class="dock-sep"></div>
-      <div class="dock-size">
-        <div class="dock-size-dot"><div id="size-preview-dot"></div></div>
-        <input type="range" min="1" max="40" value="4" class="dock-size-slider" id="size-slider">
-        <span class="dock-size-pct" id="size-pct">10%</span>
-      </div>
-      <div class="dock-sep"></div>
-      <button class="dock-btn" id="btn-format" style="position:relative;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="1.5" stroke-dasharray="3 2.5"/></svg>
-        <div class="tooltip">Format</div>
-        <div class="bg-popover" id="format-popover">
-          <div class="bg-popover-title">Canvas format</div>
-          <div class="bg-options" id="format-options">
-            <div class="bg-opt" data-format="landscape"><span class="bg-opt-label">16:9</span></div>
-            <div class="bg-opt" data-format="a4p"><span class="bg-opt-label">A4 ↕</span></div>
-            <div class="bg-opt" data-format="a4l"><span class="bg-opt-label">A4 ↔</span></div>
-            <div class="bg-opt" data-format="square"><span class="bg-opt-label">Square</span></div>
-          </div>
-          <div class="format-custom-row">
-            <input type="number" id="custom-w" placeholder="W" min="200" max="6000">
-            <input type="number" id="custom-h" placeholder="H" min="200" max="6000">
-            <button id="apply-custom-format" type="button">Set</button>
-          </div>
-        </div>
-      </button>
-      <div class="dock-sep"></div>
-      <button class="dock-btn" id="btn-bg" style="position:relative;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
-        <div class="tooltip">Background</div>
-        <div class="bg-popover" id="bg-popover">
-          <div class="bg-popover-title">Page background</div>
-          <div class="bg-options">
-            <div class="bg-opt bg-blank" data-bg="blank"><span class="bg-opt-label">Blank</span></div>
-            <div class="bg-opt bg-grid" data-bg="grid"><span class="bg-opt-label">Grid</span></div>
-            <div class="bg-opt bg-dots" data-bg="dots"><span class="bg-opt-label">Dots</span></div>
-            <div class="bg-opt bg-lines" data-bg="lines"><span class="bg-opt-label">Lines</span></div>
-          </div>
-        </div>
-      </button>
     </div>
   </main>
 
@@ -920,7 +977,7 @@ const FORMATS = {
   a4l:       { w: 1754, h: 1240, label: 'A4 ↔' },
   square:    { w: 1600, h: 1600, label: 'Square' },
 };
-const SAVE_KEY = 'kingshuk-whiteboard-save-v1';
+const SAVE_KEY = 'whiteboard-save-v1';
 
 let savedData = null;
 try { const raw = localStorage.getItem(SAVE_KEY); if (raw) savedData = JSON.parse(raw); } catch (e) { savedData = null; }
@@ -1187,7 +1244,14 @@ function resizeCanvasFormat(newW, newH) {
 
 /* ---- Autosave / restore ---- */
 let saveTimer = null;
+let hasUnexportedWork = false;
+function updateExportBadge() {
+  document.getElementById('btn-jpg').classList.toggle('unsaved', hasUnexportedWork);
+  document.getElementById('btn-pdf').classList.toggle('unsaved', hasUnexportedWork);
+}
 function scheduleSave() {
+  hasUnexportedWork = true;
+  updateExportBadge();
   clearTimeout(saveTimer);
   saveTimer = setTimeout(saveNow, 700);
 }
@@ -1204,7 +1268,14 @@ function saveNow() {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
   } catch (e) { /* storage unavailable or full */ }
 }
-window.addEventListener('beforeunload', () => { clearTimeout(saveTimer); saveNow(); });
+window.addEventListener('beforeunload', (e) => {
+  clearTimeout(saveTimer); saveNow();
+  if (hasUnexportedWork) {
+    e.preventDefault();
+    e.returnValue = 'You have work that hasn\'t been exported as PDF or JPG yet. Leave anyway?';
+    return e.returnValue;
+  }
+});
 
 /* ---- Creative chrono clock ---- */
 const hrHand = document.getElementById('hr-hand');
@@ -2302,20 +2373,18 @@ async function exportPDF() {
     cctx.save();
     cctx.translate(W/2, H/2 - 100);
     const grad = cctx.createLinearGradient(-60, -60, 60, 60);
-    grad.addColorStop(0, '#f0c08a'); grad.addColorStop(1, '#c89860');
+    grad.addColorStop(0, '#ff6b9d'); grad.addColorStop(0.5, '#c268f0'); grad.addColorStop(1, '#6a8dff');
     cctx.fillStyle = grad;
     cctx.beginPath(); cctx.arc(0, 0, 60, 0, Math.PI*2); cctx.fill();
-    cctx.fillStyle = '#0a0a0d';
-    cctx.font = 'italic 80px "Instrument Serif", Georgia, serif';
-    cctx.textAlign = 'center'; cctx.textBaseline = 'middle';
-    cctx.fillText('K', 0, 6);
-    cctx.fillStyle = '#c2585b';
-    cctx.beginPath(); cctx.arc(50, -38, 9, 0, Math.PI*2); cctx.fill();
+    cctx.fillStyle = 'rgba(255,255,255,0.95)';
+    cctx.beginPath();
+    cctx.moveTo(-18, 22); cctx.lineTo(-8, 22); cctx.lineTo(20, -14); cctx.lineTo(6, -26); cctx.lineTo(-18, 10);
+    cctx.closePath(); cctx.fill();
     cctx.restore();
     cctx.fillStyle = '#f0f0f2';
     cctx.font = 'italic 96px "Instrument Serif", Georgia, serif';
     cctx.textAlign = 'center';
-    cctx.fillText("Kingshuk's Whiteboard", W/2, H/2 + 50);
+    cctx.fillText("Whiteboard", W/2, H/2 + 50);
     cctx.fillStyle = '#f0c08a';
     cctx.font = '500 18px "JetBrains Mono", monospace';
     const date = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
@@ -2361,7 +2430,7 @@ async function exportPDF() {
       }
       tctx.save();
       tctx.font = 'italic 22px Georgia, serif'; tctx.fillStyle = 'rgba(0,0,0,0.16)';
-      tctx.textAlign = 'right'; tctx.fillText("~ Kingshuk's Whiteboard", W - 24, H - 30);
+      tctx.textAlign = 'right'; tctx.fillText("~ Whiteboard", W - 24, H - 30);
       tctx.font = '14px Manrope, sans-serif'; tctx.fillStyle = 'rgba(0,0,0,0.35)';
       tctx.textAlign = 'left'; tctx.fillText(`${i+1} / ${state.pages.length}`, 24, H - 30);
       tctx.restore();
@@ -2370,7 +2439,8 @@ async function exportPDF() {
       pdf.addImage(tmp.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, W, H, undefined, 'FAST');
     }
 
-    pdf.save(`kingshuks-whiteboard-${new Date().toISOString().slice(0,10)}.pdf`);
+    pdf.save(`whiteboard-${new Date().toISOString().slice(0,10)}.pdf`);
+    hasUnexportedWork = false; updateExportBadge();
     confetti();
     toast('PDF exported ✓');
   } catch (err) {
@@ -2398,11 +2468,12 @@ function wrapText(ctx, text, maxWidth) {
 
 document.getElementById('btn-pdf').addEventListener('click', exportPDF);
 
-document.getElementById('btn-png').addEventListener('click', () => {
+document.getElementById('btn-jpg').addEventListener('click', () => {
   if (activeEditor) commitTextEditor();
   const tmp = document.createElement('canvas');
   tmp.width = W; tmp.height = H;
   const tctx = tmp.getContext('2d');
+  tctx.fillStyle = '#fdfbf6'; tctx.fillRect(0, 0, W, H);
   tctx.drawImage(bgCanvas, 0, 0);
   tctx.drawImage(mainCanvas, 0, 0);
   const p = currentPage();
@@ -2419,13 +2490,14 @@ document.getElementById('btn-png').addEventListener('click', () => {
   }
   tctx.save();
   tctx.font = 'italic 22px Georgia, serif'; tctx.fillStyle = 'rgba(0,0,0,0.16)';
-  tctx.textAlign = 'right'; tctx.fillText("~ Kingshuk's Whiteboard", W - 24, H - 30);
+  tctx.textAlign = 'right'; tctx.fillText("~ Whiteboard", W - 24, H - 30);
   tctx.restore();
   const a = document.createElement('a');
-  a.href = tmp.toDataURL('image/png');
-  a.download = `whiteboard-page-${state.pageIdx + 1}.png`;
+  a.href = tmp.toDataURL('image/jpeg', 0.94);
+  a.download = `whiteboard-page-${state.pageIdx + 1}.jpg`;
   a.click();
-  toast('PNG exported ✓');
+  hasUnexportedWork = false; updateExportBadge();
+  toast('JPG exported ✓');
 });
 
 const modal = document.getElementById('modal-help');
