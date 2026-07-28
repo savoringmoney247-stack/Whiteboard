@@ -166,7 +166,7 @@ body.focus-mode .app { margin-left: 0; }
 .spacer { flex: 1; }
 .actions { display: flex; align-items: center; gap: 4px; }
 .icon-btn {
-  width: 40px; height: 40px;
+  width: 38px; height: 38px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   border-radius: 11px; color: var(--ink-mid);
   transition: transform 220ms cubic-bezier(0.34,1.56,0.64,1), background 220ms ease, color 220ms ease, box-shadow 220ms ease;
@@ -181,7 +181,7 @@ body.focus-mode .app { margin-left: 0; }
 .icon-btn:disabled:hover { background: none; color: var(--ink-mid); transform: none; box-shadow: none; }
 .icon-btn svg { width: 16px; height: 16px; }
 .pdf-btn {
-  height: 40px; padding: 0 16px; margin-left: 0;
+  height: 38px; padding: 0 16px; margin-left: 0; flex-shrink: 0;
   display: flex; align-items: center; gap: 8px;
   background: linear-gradient(135deg, #ff6b9d, #c268f0 45%, #6a8dff);
   color: #fff; border-radius: 11px;
@@ -373,8 +373,9 @@ body.focus-mode .app { margin-left: 0; }
 .sidebar {
   position: fixed; left: 0; top: 0; bottom: 0; width: 104px; z-index: 100;
   display: flex; flex-direction: column; align-items: center;
-  gap: 4px; padding: 14px 8px 16px;
-  overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
+  gap: 3px; padding: 12px 8px 14px;
+  overflow-y: auto; overflow-x: hidden;
+  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.22) transparent;
   background: rgba(15,16,20,0.82);
   backdrop-filter: blur(30px) saturate(180%);
   -webkit-backdrop-filter: blur(30px) saturate(180%);
@@ -382,14 +383,25 @@ body.focus-mode .app { margin-left: 0; }
   box-shadow: 8px 0 30px rgba(0,0,0,0.35);
   animation: sidebarIn 600ms cubic-bezier(0.34,1.56,0.64,1) 1900ms backwards;
 }
-.sidebar::-webkit-scrollbar { display: none; }
+.sidebar > * { flex-shrink: 0; }
+.sidebar::-webkit-scrollbar { width: 5px; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+.sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
+.sidebar-fade {
+  position: fixed; left: 0; width: 104px; height: 28px; z-index: 101; pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(15,16,20,0.85));
+  opacity: 0; transition: opacity 200ms ease;
+}
+.sidebar-fade.show { opacity: 1; }
+#sidebar-fade-top { top: 56px; background: linear-gradient(0deg, transparent, rgba(15,16,20,0.85)); }
+#sidebar-fade-bottom { bottom: 0; }
 @keyframes sidebarIn { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: translateX(0); } }
-.side-mark { width: 34px; height: 34px; margin-bottom: 6px; flex-shrink: 0; }
+.side-mark { width: 30px; height: 30px; margin-bottom: 4px; flex-shrink: 0; }
 .side-mark svg { width: 100%; height: 100%; }
-.dock-group { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.dock-sep { width: 60%; height: 1px; background: rgba(255,255,255,0.09); margin: 5px 0; flex-shrink: 0; }
+.dock-group { display: flex; flex-direction: column; align-items: center; gap: 3px; flex-shrink: 0; }
+.dock-sep { width: 60%; height: 1px; background: rgba(255,255,255,0.09); margin: 4px 0; flex-shrink: 0; }
 .dock-btn {
-  width: 40px; height: 40px;
+  width: 38px; height: 38px;
   display: flex; align-items: center; justify-content: center;
   border-radius: 11px; color: rgba(255,255,255,0.62);
   transition: transform 220ms cubic-bezier(0.34,1.56,0.64,1), background 220ms ease, color 220ms ease, box-shadow 220ms ease;
@@ -410,9 +422,9 @@ body.focus-mode .app { margin-left: 0; }
 .sidebar .dock-btn .tooltip, .sidebar .dock-color .tooltip, .sidebar .icon-btn .tooltip, .sidebar .pdf-btn .tooltip {
   left: calc(100% + 10px); top: 50%; bottom: auto; transform: translateY(-50%);
 }
-.side-colors { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.side-colors { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; flex-shrink: 0; }
 .dock-color {
-  width: 22px; height: 22px; border-radius: 50%;
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
   cursor: pointer; border: 2px solid transparent;
   transition: all var(--t-spring); position: relative;
   box-shadow: 0 1px 2px rgba(0,0,0,0.3);
@@ -423,7 +435,7 @@ body.focus-mode .app { margin-left: 0; }
   box-shadow: 0 0 0 2px var(--bg-deep), 0 0 0 3.5px var(--ink), 0 2px 6px rgba(0,0,0,0.3);
 }
 .dock-custom {
-  width: 22px; height: 22px; border-radius: 50%; margin-top: 4px;
+  width: 20px; height: 20px; border-radius: 50%; margin-top: 4px; flex-shrink: 0;
   background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
   cursor: pointer; position: relative;
   box-shadow: 0 1px 2px rgba(0,0,0,0.3), inset 0 0 0 1.5px var(--bg-deep);
@@ -431,7 +443,7 @@ body.focus-mode .app { margin-left: 0; }
 }
 .dock-custom:hover { transform: scale(1.15); }
 .dock-custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.dock-size { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 4px 0; width: 100%; }
+.dock-size { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 2px 0; width: 100%; flex-shrink: 0; }
 .dock-size-pct { font-family: var(--mono); font-size: 9.5px; color: var(--ink-dim); }
 .dock-size-dot {
   width: 24px; height: 24px;
@@ -453,7 +465,7 @@ body.focus-mode .app { margin-left: 0; }
   width: 12px; height: 12px; background: var(--ink);
   border-radius: 50%; border: none; cursor: pointer;
 }
-.sidebar .pdf-btn { width: 40px; height: 40px; padding: 0; border-radius: 11px; margin: 0; }
+.sidebar .pdf-btn { width: 38px; height: 38px; padding: 0; border-radius: 11px; margin: 0; flex-shrink: 0; }
 .sidebar .pdf-btn span { display: none; }
 .sidebar .pdf-btn svg { width: 17px; height: 17px; }
 
@@ -846,6 +858,8 @@ body { transition: background-color 900ms ease; }
     <div class="tooltip">Export all pages<kbd>⌘P</kbd></div>
   </button>
 </aside>
+<div class="sidebar-fade" id="sidebar-fade-top"></div>
+<div class="sidebar-fade" id="sidebar-fade-bottom"></div>
 
 <div id="welcome">
   <svg class="welcome-svg" viewBox="0 0 110 110">
@@ -1973,7 +1987,26 @@ window.addEventListener('resize', () => {
   fitFrame();
   if (state.selectedItems.length) renderSelection();
   renderStickies();
+  updateSidebarFade();
 });
+
+const sidebar = document.getElementById('sidebar');
+const sidebarFadeTop = document.getElementById('sidebar-fade-top');
+const sidebarFadeBottom = document.getElementById('sidebar-fade-bottom');
+function updateSidebarFade() {
+  const r = sidebar.getBoundingClientRect();
+  sidebarFadeTop.style.left = r.left + 'px';
+  sidebarFadeTop.style.width = r.width + 'px';
+  sidebarFadeBottom.style.left = r.left + 'px';
+  sidebarFadeBottom.style.width = r.width + 'px';
+  const canScrollUp = sidebar.scrollTop > 4;
+  const canScrollDown = sidebar.scrollTop < sidebar.scrollHeight - sidebar.clientHeight - 4;
+  sidebarFadeTop.classList.toggle('show', canScrollUp);
+  sidebarFadeBottom.classList.toggle('show', canScrollDown);
+}
+sidebar.addEventListener('scroll', updateSidebarFade);
+window.addEventListener('load', updateSidebarFade);
+setTimeout(updateSidebarFade, 50);
 
 function laserLoop() {
   laserCtx.clearRect(0, 0, W, H);
