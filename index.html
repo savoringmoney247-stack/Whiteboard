@@ -124,7 +124,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Layout */
-.app { display: grid; grid-template-rows: 56px 1fr 48px; height: 100vh; margin-left: 104px; transition: margin-left 320ms cubic-bezier(0.4,0,0.2,1); }
+.app { display: grid; grid-template-rows: 56px 1fr; height: 100vh; margin-left: 104px; transition: margin-left 320ms cubic-bezier(0.4,0,0.2,1); }
 body.sidebar-expanded .app { margin-left: 280px; }
 body.focus-mode .app { margin-left: 0; }
 
@@ -250,7 +250,7 @@ body.focus-mode .app { margin-left: 0; }
 .stage {
   position: relative;
   display: flex; align-items: center; justify-content: center;
-  padding: 32px;
+  padding: 32px; gap: 18px;
   overflow: hidden;
   background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%);
 }
@@ -479,6 +479,32 @@ body.sidebar-expanded .side-mark { align-self: flex-start; margin-left: 3px; }
 .sidebar .dock-btn .tooltip, .sidebar .dock-color .tooltip, .sidebar .icon-btn .tooltip, .sidebar .pdf-btn .tooltip {
   left: calc(100% + 10px); top: 50%; bottom: auto; transform: translateY(-50%);
 }
+/* Collapsed sidebar: the panel scrolls (overflow-x: hidden), which clips any
+   tooltip that pops out past its right edge. Hide the clipped in-place
+   tooltips and use #global-tooltip (fixed, appended outside the scroll
+   context) instead. Expanded mode is untouched — labels are already visible
+   there and the original tooltip behavior is kept. */
+body:not(.sidebar-expanded) .sidebar .dock-btn .tooltip,
+body:not(.sidebar-expanded) .sidebar .icon-btn .tooltip,
+body:not(.sidebar-expanded) .sidebar .pdf-btn .tooltip {
+  display: none;
+}
+.global-tooltip {
+  position: fixed;
+  transform: translateY(-50%);
+  background: var(--bg-void); border: 1px solid var(--line-strong);
+  color: var(--ink); font-size: 11px; font-weight: 500;
+  padding: 6px 10px; border-radius: 6px;
+  white-space: nowrap; pointer-events: none; opacity: 0;
+  transition: opacity 120ms ease;
+  z-index: 3000;
+}
+.global-tooltip.show { opacity: 1; }
+.global-tooltip kbd {
+  font-family: var(--mono); font-size: 10px;
+  background: var(--bg-elev); border-radius: 3px;
+  padding: 1px 5px; margin-left: 6px; color: var(--ink-mid);
+}
 .side-colors { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; flex-shrink: 0; }
 .dock-color {
   width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
@@ -522,7 +548,7 @@ body.sidebar-expanded .side-mark { align-self: flex-start; margin-left: 3px; }
   width: 12px; height: 12px; background: var(--ink);
   border-radius: 50%; border: none; cursor: pointer;
 }
-.sidebar .pdf-btn { width: 38px; height: 38px; padding: 0; border-radius: 11px; margin: 0; flex-shrink: 0; }
+.sidebar .pdf-btn { width: 38px; height: 38px; padding: 0; border-radius: 11px; margin: 0; flex-shrink: 0; justify-content: center; }
 .sidebar .pdf-btn span { display: none; }
 .sidebar .pdf-btn svg { width: 17px; height: 17px; }
 
@@ -577,12 +603,31 @@ body.sidebar-expanded .side-mark { align-self: flex-start; margin-left: 3px; }
   background-size: 100% 9px;
 }
 
-/* Pages strip */
-.pagestrip {
-  display: flex; align-items: center; padding: 0 16px; gap: 14px;
-  background: var(--bg-deep); border-top: 1px solid var(--line);
+.clear-menu { width: 224px; padding: 8px; }
+.clear-menu-item {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 500;
+  color: var(--ink); text-align: left; transition: background 150ms ease, color 150ms ease;
+}
+.clear-menu-item svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--ink-mid); }
+.clear-menu-item:hover:not(:disabled) { background: var(--bg-elev); }
+.clear-menu-item:disabled { opacity: 0.35; cursor: not-allowed; }
+.clear-menu-item.danger { color: var(--crimson); }
+.clear-menu-item.danger svg { color: var(--crimson); }
+.clear-menu-item.danger:hover:not(:disabled) { background: rgba(194,88,91,0.14); }
+.clear-menu-sep { height: 1px; background: var(--line); margin: 5px 4px; }
+
+/* Page rail (left of the whiteboard) + tall Add-page button (right of the
+   whiteboard). Both live inside .stage as flex siblings of .canvas-frame, so
+   they stay visible in Focus mode (only .topbar/.sidebar are hidden there). */
+.page-rail {
+  align-self: stretch; width: 134px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--bg-deep); border: 1px solid var(--line);
+  border-radius: 14px; padding: 10px 8px;
   z-index: 20; position: relative;
 }
+.page-rail-nav { display: flex; align-items: center; justify-content: center; gap: 4px; }
 .page-nav-btn {
   width: 32px; height: 32px;
   display: flex; align-items: center; justify-content: center;
@@ -594,64 +639,82 @@ body.sidebar-expanded .side-mark { align-self: flex-start; margin-left: 3px; }
 .page-nav-btn svg { width: 14px; height: 14px; }
 .page-info {
   font-family: var(--mono); font-size: 10.5px; color: var(--ink-mid);
-  letter-spacing: 0.08em; padding: 0 8px; white-space: nowrap;
+  letter-spacing: 0.06em; white-space: nowrap; text-align: center;
 }
 .page-info strong { color: var(--gold-bright); font-weight: 500; }
 .thumbs {
-  flex: 1; display: flex; align-items: center; gap: 8px;
-  overflow-x: auto; padding: 4px 0; scrollbar-width: none;
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  overflow-y: auto; overflow-x: hidden; padding: 4px 12px 4px 2px;
+  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.22) transparent;
 }
-.thumbs::-webkit-scrollbar { display: none; }
+.thumbs::-webkit-scrollbar { width: 4px; }
+.thumbs::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
 .thumb {
-  flex-shrink: 0; width: 64px; height: 36px;
-  border-radius: 3px; background: var(--paper);
+  flex-shrink: 0; width: 104px; height: 59px;
+  border-radius: 5px; background: var(--paper);
   border: 1.5px solid transparent; overflow: hidden;
   cursor: pointer; position: relative;
   transition: all var(--t);
   box-shadow: 0 1px 4px rgba(0,0,0,0.4);
 }
-.thumb:hover { transform: translateY(-2px); }
+.thumb:hover { transform: translateX(2px); }
 .thumb.active {
   border-color: var(--gold-bright);
   box-shadow: 0 0 0 1px var(--bg-deep), 0 0 12px var(--gold-glow), 0 2px 6px rgba(0,0,0,0.4);
 }
+.thumb.selected { box-shadow: 0 0 0 2px var(--azure), 0 2px 6px rgba(0,0,0,0.4); }
 .thumb canvas { width: 100%; height: 100%; display: block; }
 .thumb-num {
-  position: absolute; top: 1px; left: 3px;
+  position: absolute; bottom: 1px; left: 3px;
   font-family: var(--mono); font-size: 8px;
   color: rgba(0,0,0,0.42); font-weight: 600;
 }
+.thumb-check {
+  position: absolute; top: 3px; left: 3px;
+  width: 15px; height: 15px; border-radius: 4px;
+  background: rgba(255,255,255,0.85); border: 1.5px solid rgba(0,0,0,0.3);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 150ms ease, background 150ms ease, border-color 150ms ease;
+}
+.thumb:hover .thumb-check, .thumb-check.checked { opacity: 1; }
+.thumb-check.checked { background: var(--gold-bright); border-color: var(--gold-bright); }
+.thumb-check.checked::after {
+  content: ''; width: 7px; height: 4px;
+  border-left: 2px solid #1a1a1a; border-bottom: 2px solid #1a1a1a;
+  transform: rotate(-45deg) translate(1px,-1px);
+}
 .thumb-del {
-  position: absolute; top: 1px; right: 1px;
-  width: 14px; height: 14px; background: rgba(255,255,255,0.88);
+  position: absolute; top: 3px; right: 3px;
+  width: 16px; height: 16px; background: rgba(255,255,255,0.9);
   color: #555; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 10px; line-height: 1;
+  font-size: 11px; line-height: 1;
   opacity: 0; transition: opacity 150ms;
 }
 .thumb:hover .thumb-del { opacity: 1; }
 .thumb-del:hover { background: var(--crimson); color: white; }
-.add-page {
-  flex-shrink: 0; width: 70px; height: 40px;
-  border-radius: 14px; border: none; cursor: pointer;
-  background: linear-gradient(135deg, #ff8a65 0%, #ff6b9d 40%, #8a6bff 100%);
-  color: #fff; display: flex; align-items: center; justify-content: center;
-  gap: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+.add-page-tall {
+  align-self: stretch; width: 84px; flex-shrink: 0;
+  border-radius: 16px; border: none; cursor: pointer;
+  background: linear-gradient(160deg, #ff8a65 0%, #ff6b9d 40%, #8a6bff 100%);
+  color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
   box-shadow: 0 3px 0 rgba(28,23,17,0.25), 0 8px 20px rgba(138,107,255,0.35), inset 0 1px 0 rgba(255,255,255,0.4);
-  transform: perspective(500px) rotateX(0deg) translateY(0) scale(1);
   transition: transform 240ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 240ms ease, filter 240ms ease;
+  position: relative; z-index: 20;
 }
-.add-page:hover {
-  transform: perspective(500px) rotateX(8deg) translateY(-3px) scale(1.05);
+.add-page-tall span { writing-mode: vertical-rl; transform: rotate(180deg); }
+.add-page-tall svg { width: 20px; height: 20px; flex-shrink: 0; transition: transform 280ms cubic-bezier(0.34,1.56,0.64,1); }
+.add-page-tall:hover {
+  transform: translateY(-3px) scale(1.03);
   box-shadow: 0 6px 0 rgba(28,23,17,0.25), 0 16px 30px rgba(138,107,255,0.5), inset 0 1px 0 rgba(255,255,255,0.5);
   filter: brightness(1.08) saturate(1.2);
 }
-.add-page:active {
-  transform: perspective(500px) rotateX(2deg) translateY(1px) scale(0.99);
+.add-page-tall:active {
+  transform: translateY(1px) scale(0.99);
   box-shadow: 0 1px 0 rgba(28,23,17,0.25), 0 4px 10px rgba(138,107,255,0.4);
 }
-.add-page svg { width: 13px; height: 13px; transition: transform 280ms cubic-bezier(0.34,1.56,0.64,1); }
-.add-page:hover svg { transform: rotate(180deg) scale(1.2); }
+.add-page-tall:hover svg { transform: rotate(180deg) scale(1.15); }
 
 /* Modal */
 .modal-bg {
@@ -752,7 +815,6 @@ body.sidebar-expanded .side-mark { align-self: flex-start; margin-left: 3px; }
 
 /* Focus mode */
 body.focus-mode .topbar,
-body.focus-mode .pagestrip,
 body.focus-mode .sidebar {
   opacity: 0; pointer-events: none;
   transition: opacity 400ms ease;
@@ -781,7 +843,7 @@ body.theme-afternoon { --gold:#d4a574; --gold-bright:#f0c08a; --gold-glow:rgba(2
 body.theme-evening   { --gold:#dd8f5b; --gold-bright:#ffb37a; --gold-glow:rgba(255,179,122,0.4); --crimson:#cf5750; --azure:#c98bd6; --bg-void:#0e0a0c; --bg-deep:#161011; --bg-card:#201619; --bg-elev:#2a1c20; }
 body.theme-night     { --gold:#8fa3d4; --gold-bright:#b7c6ef; --gold-glow:rgba(183,198,239,0.35); --crimson:#a15b8a; --azure:#5c8fc9; --bg-void:#040508; --bg-deep:#080a10; --bg-card:#0e1119; --bg-elev:#141826; }
 body { transition: background-color 900ms ease; }
-.topbar, .sidebar, .pagestrip, .bg-popover, .modal, .loader-ring { transition: background-color 900ms ease, border-color 900ms ease; }
+.topbar, .sidebar, .page-rail, .bg-popover, .modal, .loader-ring { transition: background-color 900ms ease, border-color 900ms ease; }
 
 /* Creative chrono clock */
 .chrono { display: flex; align-items: center; gap: 12px; margin-left: 24px; padding-right: 18px; border-right: 1px solid var(--line); }
@@ -868,7 +930,7 @@ body { transition: background-color 900ms ease; }
   </button>
   <button class="icon-btn" id="btn-clear">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-    <div class="tooltip">Clear page</div>
+    <div class="tooltip">Clear / delete pages</div>
   </button>
   <button class="icon-btn" id="btn-focus">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
@@ -890,6 +952,23 @@ body { transition: background-color 900ms ease; }
 </button>
 <div class="sidebar-fade" id="sidebar-fade-top"></div>
 <div class="sidebar-fade" id="sidebar-fade-bottom"></div>
+<div class="global-tooltip" id="global-tooltip"></div>
+<div class="bg-popover clear-menu" id="clear-menu">
+  <div class="bg-popover-title">Clear / Delete</div>
+  <button class="clear-menu-item" id="clear-current" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+    <span>Clear current page</span>
+  </button>
+  <button class="clear-menu-item" id="clear-selected" type="button" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    <span class="clear-menu-label">Delete selected pages</span>
+  </button>
+  <div class="clear-menu-sep"></div>
+  <button class="clear-menu-item danger" id="clear-all" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+    <span>Delete all pages</span>
+  </button>
+</div>
 
 <div id="welcome">
   <svg class="welcome-svg" viewBox="0 0 110 110">
@@ -971,6 +1050,19 @@ body { transition: background-color 900ms ease; }
   </div>
 
   <main class="stage">
+    <aside class="page-rail" id="page-rail">
+      <div class="page-rail-nav">
+        <button class="page-nav-btn" id="btn-prev">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button class="page-nav-btn" id="btn-next">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+      <div class="page-info">PAGE <strong id="page-cur">1</strong> / <strong id="page-tot">1</strong></div>
+      <div class="thumbs" id="thumbs"></div>
+    </aside>
+
     <div class="canvas-frame">
       <div class="canvas-wrap tool-pen" id="canvas-wrap">
         <canvas id="bg-canvas"></canvas>
@@ -985,22 +1077,12 @@ body { transition: background-color 900ms ease; }
         <div class="canvas-watermark">Whiteboard</div>
       </div>
     </div>
-  </main>
 
-  <footer class="pagestrip">
-    <button class="page-nav-btn" id="btn-prev">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-    </button>
-    <button class="page-nav-btn" id="btn-next">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-    </button>
-    <div class="page-info">PAGE <strong id="page-cur">1</strong> / <strong id="page-tot">1</strong></div>
-    <div class="thumbs" id="thumbs"></div>
-    <button class="add-page" id="btn-add-page">
+    <button class="add-page-tall" id="btn-add-page">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-      <span>NEW</span>
+      <span>New Page</span>
     </button>
-  </footer>
+  </main>
 </div>
 
 <div class="modal-bg" id="modal-help">
@@ -1098,6 +1180,7 @@ const state = {
   marqueeStart: null,
   shiftHeld: false,
   altHeld: false,
+  selectedPageIds: new Set(),
 };
 
 function makePage() {
@@ -1740,7 +1823,7 @@ function onUp(e) {
 
   activeCtx.clearRect(0, 0, W, H);
   renderMain();
-  renderThumbs();
+  redrawCurrentThumb();
 }
 
 function drawStrokeIncremental(ctx, s, isFirst) {
@@ -1993,7 +2076,7 @@ function deleteSelected() {
   clearSelection();
   renderMain();
   renderStickies();
-  renderThumbs();
+  redrawCurrentThumb();
   toast(count > 1 ? `${count} items deleted` : 'Deleted');
 }
 
@@ -2036,6 +2119,37 @@ function updateSidebarFade() {
 sidebar.addEventListener('scroll', updateSidebarFade);
 window.addEventListener('load', updateSidebarFade);
 setTimeout(updateSidebarFade, 50);
+
+/* ---- Collapsed-sidebar tooltips ----
+   The sidebar scrolls (overflow-x: hidden) so an in-place tooltip that pops
+   out to the right gets clipped/hidden behind the scroll edge. Instead, show
+   a single fixed-position tooltip (outside the sidebar's scroll context) on
+   hover, positioned from the hovered button's own coordinates. Only active
+   when collapsed — expanded mode already shows text labels and keeps its
+   original tooltip behavior untouched. */
+const globalTooltip = document.getElementById('global-tooltip');
+function showGlobalTooltip(target) {
+  if (document.body.classList.contains('sidebar-expanded')) return;
+  const tip = target.querySelector('.tooltip');
+  if (!tip) return;
+  globalTooltip.innerHTML = tip.innerHTML;
+  const r = target.getBoundingClientRect();
+  globalTooltip.style.left = (r.right + 10) + 'px';
+  globalTooltip.style.top = (r.top + r.height / 2) + 'px';
+  globalTooltip.classList.add('show');
+}
+function hideGlobalTooltip() {
+  globalTooltip.classList.remove('show');
+}
+sidebar.addEventListener('mouseover', e => {
+  const target = e.target.closest('.dock-btn, .icon-btn, .pdf-btn');
+  if (target) showGlobalTooltip(target);
+});
+sidebar.addEventListener('mouseout', e => {
+  const target = e.target.closest('.dock-btn, .icon-btn, .pdf-btn');
+  if (target) hideGlobalTooltip();
+});
+sidebar.addEventListener('scroll', hideGlobalTooltip);
 
 /* ---- Collapsible / expandable sidebar ---- */
 function buildSidebarLabels() {
@@ -2142,7 +2256,7 @@ function commitTextEditor() {
     p.history.push({ kind:'add', target:'text', item:t });
     p.redoStack = [];
     renderMain();
-    renderThumbs();
+    redrawCurrentThumb();
   }
   ed.remove();
 }
@@ -2160,7 +2274,7 @@ function placeSticky(pt) {
   p.history.push({ kind:'add', target:'sticky', item: sticky });
   p.redoStack = [];
   renderStickies();
-  renderThumbs();
+  redrawCurrentThumb();
   setTimeout(() => {
     const el = document.querySelector(`[data-sticky-id="${sticky.id}"] textarea`);
     if (el) el.focus();
@@ -2183,7 +2297,7 @@ function renderStickies() {
     txt.value = s.text;
     txt.placeholder = 'Type here…';
     txt.addEventListener('input', () => { s.text = txt.value; });
-    txt.addEventListener('blur', () => renderThumbs());
+    txt.addEventListener('blur', () => redrawCurrentThumb());
 
     const close = document.createElement('button');
     close.className = 'sticky-close';
@@ -2192,7 +2306,7 @@ function renderStickies() {
       const idx = p.stickies.indexOf(s);
       const removed = p.stickies.splice(idx, 1)[0];
       p.history.push({ kind:'remove', target:'sticky', item: removed });
-      renderStickies(); renderThumbs();
+      renderStickies(); redrawCurrentThumb();
     });
 
     el.appendChild(txt); el.appendChild(close);
@@ -2221,7 +2335,7 @@ document.addEventListener('paste', (e) => {
           p.images.push(im);
           p.history.push({ kind:'add', target:'image', item: im });
           p.redoStack = [];
-          renderMain(); renderThumbs();
+          renderMain(); redrawCurrentThumb();
           toast('Image pasted');
         };
         img.src = ev.target.result;
@@ -2250,7 +2364,7 @@ canvasWrap.addEventListener('drop', e => {
       p.images.push(im);
       p.history.push({ kind:'add', target:'image', item: im });
       p.redoStack = [];
-      renderMain(); renderThumbs();
+      renderMain(); redrawCurrentThumb();
       toast('Image added');
     };
     img.src = ev.target.result;
@@ -2272,7 +2386,7 @@ function undo() {
     for (const x of op.items) arrFor(p, x.target).push(x.item);
   }
   p.redoStack.push(op);
-  renderMain(); renderStickies(); renderThumbs();
+  renderMain(); renderStickies(); redrawCurrentThumb();
   if (state.selectedItems.length) clearSelection();
 }
 function redo() {
@@ -2292,7 +2406,7 @@ function redo() {
     }
   }
   p.history.push(op);
-  renderMain(); renderStickies(); renderThumbs();
+  renderMain(); renderStickies(); redrawCurrentThumb();
 }
 function arrFor(p, target) {
   return { stroke: p.strokes, shape: p.shapes, text: p.texts, sticky: p.stickies, image: p.images }[target];
@@ -2301,7 +2415,38 @@ function arrFor(p, target) {
 document.getElementById('btn-undo').addEventListener('click', undo);
 document.getElementById('btn-redo').addEventListener('click', redo);
 
-document.getElementById('btn-clear').addEventListener('click', () => {
+/* ---- Clear / delete pages menu ---- */
+const clearBtn = document.getElementById('btn-clear');
+const clearMenu = document.getElementById('clear-menu');
+function positionClearMenu() {
+  const r = clearBtn.getBoundingClientRect();
+  const w = 224;
+  let left = r.right + 12;
+  left = Math.min(left, window.innerWidth - w - 8);
+  let top = r.top;
+  top = Math.min(top, window.innerHeight - 180);
+  clearMenu.style.left = left + 'px';
+  clearMenu.style.top = Math.max(8, top) + 'px';
+}
+function updateClearMenuState() {
+  const n = state.selectedPageIds.size;
+  const btn = document.getElementById('clear-selected');
+  btn.disabled = n === 0;
+  btn.querySelector('.clear-menu-label').textContent = n > 0 ? `Delete selected pages (${n})` : 'Delete selected pages';
+}
+clearBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const opening = !clearMenu.classList.contains('show');
+  if (opening) { positionClearMenu(); updateClearMenuState(); }
+  clearMenu.classList.toggle('show', opening);
+});
+window.addEventListener('resize', () => { if (clearMenu.classList.contains('show')) positionClearMenu(); });
+document.addEventListener('click', (e) => {
+  if (!clearMenu.contains(e.target) && !clearBtn.contains(e.target)) clearMenu.classList.remove('show');
+});
+
+document.getElementById('clear-current').addEventListener('click', () => {
+  clearMenu.classList.remove('show');
   if (!confirm('Clear this page? Use Undo to restore.')) return;
   const p = currentPage();
   p.history.push({
@@ -2316,8 +2461,33 @@ document.getElementById('btn-clear').addEventListener('click', () => {
   });
   p.strokes = []; p.shapes = []; p.texts = []; p.stickies = []; p.images = [];
   p.redoStack = [];
-  renderMain(); renderStickies(); renderThumbs();
+  renderMain(); renderStickies(); redrawCurrentThumb();
   toast('Page cleared');
+});
+
+document.getElementById('clear-selected').addEventListener('click', () => {
+  clearMenu.classList.remove('show');
+  const ids = state.selectedPageIds;
+  if (!ids.size) return;
+  if (ids.size >= state.pages.length) { toast('At least one page must remain'); return; }
+  if (!confirm(`Delete ${ids.size} selected page${ids.size > 1 ? 's' : ''}? This cannot be undone.`)) return;
+  state.pages = state.pages.filter(p => !ids.has(p.id));
+  ids.clear();
+  if (state.pageIdx >= state.pages.length) state.pageIdx = state.pages.length - 1;
+  gotoPage(state.pageIdx);
+  renderThumbs();
+  toast('Selected pages deleted');
+});
+
+document.getElementById('clear-all').addEventListener('click', () => {
+  clearMenu.classList.remove('show');
+  if (!confirm(`Delete all ${state.pages.length} pages? This resets to a single blank page and cannot be undone.`)) return;
+  state.pages = [makePage()];
+  state.selectedPageIds.clear();
+  state.pageIdx = 0;
+  gotoPage(0);
+  renderThumbs();
+  toast('All pages deleted');
 });
 
 function gotoPage(idx) {
@@ -2331,19 +2501,22 @@ function gotoPage(idx) {
   document.getElementById('btn-prev').disabled = idx === 0;
   document.getElementById('btn-next').disabled = idx === state.pages.length - 1;
   document.querySelectorAll('.bg-opt').forEach(o => o.classList.toggle('active', o.dataset.bg === currentPage().background));
-  renderThumbs();
+  updateActiveThumb();
 }
 function addPage() {
   state.pages.splice(state.pageIdx + 1, 0, makePage());
   gotoPage(state.pageIdx + 1);
+  renderThumbs();
   toast(`Added page ${state.pageIdx + 1}`);
 }
 function deletePage(idx) {
   if (state.pages.length <= 1) { toast('At least one page required'); return; }
   if (!confirm(`Delete page ${idx + 1}?`)) return;
-  state.pages.splice(idx, 1);
+  const removed = state.pages.splice(idx, 1)[0];
+  state.selectedPageIds.delete(removed.id);
   if (state.pageIdx >= state.pages.length) state.pageIdx = state.pages.length - 1;
   gotoPage(state.pageIdx);
+  renderThumbs();
   toast('Page deleted');
 }
 
@@ -2351,13 +2524,29 @@ document.getElementById('btn-prev').addEventListener('click', () => gotoPage(sta
 document.getElementById('btn-next').addEventListener('click', () => gotoPage(state.pageIdx + 1));
 document.getElementById('btn-add-page').addEventListener('click', addPage);
 
+/* ---- Page thumbnails ----
+   renderThumbs() rebuilds the whole thumbnail list and redraws every page's
+   canvas — expensive, so it's only called when the page LIST itself changes
+   (added/deleted/resized), not on every edit.
+   redrawCurrentThumb() redraws just the current page's own thumbnail canvas,
+   deferred to the next animation frame so it never runs synchronously inside
+   a pointerup/input handler (that synchronous blocking was the root cause of
+   both the slowdown with many pages and the pen input feeling "stuck" —
+   heavy work on the main thread delays processing of the next pointer
+   events, which is far more noticeable with a pen's high-frequency input
+   than with a mouse).
+   updateActiveThumb() just toggles which thumb has the "active" highlight —
+   used when only navigating between pages, where no page content changed at
+   all, so no canvas needs to be redrawn. */
 function renderThumbs() {
   scheduleSave();
   const c = document.getElementById('thumbs');
   c.innerHTML = '';
   state.pages.forEach((p, i) => {
     const w = document.createElement('div');
-    w.className = 'thumb' + (i === state.pageIdx ? ' active' : '');
+    w.className = 'thumb'
+      + (i === state.pageIdx ? ' active' : '')
+      + (state.selectedPageIds.has(p.id) ? ' selected' : '');
     w.title = `Page ${i+1}`;
     const cv = document.createElement('canvas');
     cv.width = 128; cv.height = 72;
@@ -2365,6 +2554,18 @@ function renderThumbs() {
     const num = document.createElement('div');
     num.className = 'thumb-num'; num.textContent = String(i+1).padStart(2,'0');
     w.appendChild(num);
+    const chk = document.createElement('button');
+    chk.className = 'thumb-check' + (state.selectedPageIds.has(p.id) ? ' checked' : '');
+    chk.title = 'Select for bulk delete';
+    chk.addEventListener('click', e => {
+      e.stopPropagation();
+      if (state.selectedPageIds.has(p.id)) state.selectedPageIds.delete(p.id);
+      else state.selectedPageIds.add(p.id);
+      chk.classList.toggle('checked');
+      w.classList.toggle('selected', state.selectedPageIds.has(p.id));
+      updateClearMenuState();
+    });
+    w.appendChild(chk);
     if (state.pages.length > 1) {
       const d = document.createElement('button');
       d.className = 'thumb-del'; d.innerHTML = '×'; d.title = 'Delete';
@@ -2374,6 +2575,24 @@ function renderThumbs() {
     w.addEventListener('click', () => gotoPage(i));
     c.appendChild(w);
     drawThumb(cv, p);
+  });
+}
+function updateActiveThumb() {
+  const c = document.getElementById('thumbs');
+  Array.from(c.children).forEach((el, i) => el.classList.toggle('active', i === state.pageIdx));
+}
+let thumbRedrawScheduled = false;
+function redrawCurrentThumb() {
+  scheduleSave();
+  if (thumbRedrawScheduled) return;
+  thumbRedrawScheduled = true;
+  requestAnimationFrame(() => {
+    thumbRedrawScheduled = false;
+    const c = document.getElementById('thumbs');
+    const el = c.children[state.pageIdx];
+    if (!el) { renderThumbs(); return; }
+    const cv = el.querySelector('canvas');
+    if (cv) drawThumb(cv, currentPage());
   });
 }
 function drawThumb(c, p) {
@@ -2675,13 +2894,18 @@ document.addEventListener('keyup', e => {
 document.querySelector('.canvas-frame').style.aspectRatio = `${W} / ${H}`;
 markActiveFormat();
 
-state.pages.forEach(p => {
+state.pages.forEach((p, pageIdx) => {
   (p._pendingImages || []).forEach(pi => {
     if (!pi.src) return;
     const img = new Image();
     const im = { img, x: pi.x, y: pi.y, w: pi.w, h: pi.h };
     p.images.push(im);
-    img.onload = () => { renderMain(); renderThumbs(); };
+    img.onload = () => {
+      if (pageIdx === state.pageIdx) renderMain();
+      const el = document.getElementById('thumbs').children[pageIdx];
+      const cv = el && el.querySelector('canvas');
+      if (cv) drawThumb(cv, p);
+    };
     img.src = pi.src;
   });
   delete p._pendingImages;
